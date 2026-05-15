@@ -32,6 +32,14 @@
 - ✅ 人员管理
 - ✅ 角色权限管理
 
+### 5. 物流管理模块
+- ✅ 物流记录CRUD操作
+- ✅ 物流状态管理（待发货/已发货/运输中/已到货/已签收/异常）
+- ✅ 发货确认功能（填写物流单号、物流公司）
+- ✅ 到货确认功能
+- ✅ 根据合同ID筛选物流记录
+- ✅ 从合同详情页跳转查看物流
+
 ---
 
 ## 修复的问题
@@ -69,6 +77,16 @@
 - `srm-frontend-app/src/services/api.ts` - 修复响应拦截器
 - `srm-frontend-app/src/pages/Categories.tsx` - 简化增删改函数
 
+5. **物流管理新增功能编号重复问题**（2026-05-15）
+   - 问题：新增物流记录时提示"唯一约束冲突"，新增失败
+   - 根本原因：物流编号生成逻辑使用COUNT统计，重启后编号重复
+   - 解决方案：
+     - LogisticsMapper新增selectMaxCode方法查询当天最大编号
+     - LogisticsController修改generateLogisticsCode逻辑，基于最大编号递增
+   - 修改的文件：
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/mapper/LogisticsMapper.java`
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/controller/LogisticsController.java`
+
 ---
 
 ## 技术栈
@@ -97,6 +115,18 @@
 ---
 
 ## 版本记录
+
+### v1.0.6 - 2026年5月15日
+- 物流管理模块开发完成
+- 修复物流编号重复问题
+
+### v1.0.5 - 2026年5月15日
+- 添加物流管理模块
+- 新增logistics表和相关API
+
+### v1.0.4 - 2026年5月15日
+- 品类管理修复
+- 定价管理完善（重叠区间校验、调价溢价预警）
 
 ### v1.0.0 - 2026年5月
 - 基础功能完成
@@ -131,8 +161,10 @@ srm-frontend-app/         # 前端应用
 
 ## 访问指南
 
-1. **供应商管理**：http://localhost:5174/suppliers
-2. **品类管理**：http://localhost:5174/categories
-3. **合同管理**：http://localhost:5174/contracts
-4. **物料管理**：http://localhost:5174/materials
-5. **组织架构**：http://localhost:5174/organization
+1. **供应商管理**：http://localhost:5175/suppliers
+2. **物料管理**：http://localhost:5175/materials
+3. **品类管理**：http://localhost:5175/categories
+4. **合同管理**：http://localhost:5175/contracts
+5. **物流管理**：http://localhost:5175/logistics
+6. **定价管理**：http://localhost:5175/pricing
+7. **组织架构**：http://localhost:5175/organization
