@@ -1,0 +1,52 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:srm_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+jwt:
+  secret: srm@2026#JWT_SECRET_KEY
+  expiration: 7200
+
+feishu:
+  app-id: ${FEISHU_APP_ID:}
+  app-secret: ${FEISHU_APP_SECRET:}
+  tenant-key: ${FEISHU_TENANT_KEY:}
+  approval-code: ${FEISHU_APPROVAL_CODE:}
+  webhook-url: ${FEISHU_WEBHOOK_URL:}
+
+wechat:
+  work:
+    corp-id: ${WECHAT_WORK_CORP_ID:}
+    corp-secret: ${WECHAT_WORK_CORP_SECRET:}
+
+swagger:
+  enabled: true
+  title: SRM采购管理系统 API文档
+  description: 燃气发电机零部件采购管理系统接口文档
+  version: 1.0.0
+  base-package: com.srm

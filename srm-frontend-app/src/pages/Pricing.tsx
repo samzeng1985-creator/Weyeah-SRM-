@@ -1,0 +1,586 @@
+import { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
+import { pricingApi } from '../services/pricing';
+
+interface PricingProps {
+  onLogout: () => void;
+}
+
+interface PricingItem {
+  id?: number;
+  code: string;
+  supplierId?: number;
+  supplierName?: string;
+  materialId?: number;
+  materialName?: string;
+  price: number;
+  currency?: string;
+  unit?: string;
+  effectiveDate?: string;
+  expiryDate?: string;
+  status: string;
+  remark?: string;
+}
+
+interface Supplier {
+  id: number;
+  name: string;
+}
+
+interface Material {
+  id: number;
+  name: string;
+}
+
+export default function Pricing({ onLogout }: PricingProps) {
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'create') {
+      setShowModal(true);
+      history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [currentPricing, setCurrentPricing] = useState<PricingItem | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [pricingList, setPricingList] = useState<PricingItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+
+  const [formData, setFormData] = useState<Partial<PricingItem>>({
+    supplierId: undefined,
+    materialId: undefined,
+    price: 0,
+    currency: 'CNY',
+    unit: '件',
+    effectiveDate: '',
+    status: 'PENDING',
+  });
+
+  useEffect(() => {
+    loadPricingList();
+    loadSelectOptions();
+  }, [currentPage, keyword, statusFilter]);
+
+  const loadSelectOptions = async () => {
+    try {
+      const [supplierRes, materialRes] = await Promise.all([
+        pricingApi.getSuppliers(),
+        pricingApi.getMaterials(),
+      ]);
+      if (supplierRes.success && supplierRes.data) {
+        setSuppliers(supplierRes.data);
+      }
+      if (materialRes.success && materialRes.data) {
+        setMaterials(materialRes.data);
+      }
+    } catch (error) {
+      console.error('加载选项失败:', error);
+    }
+  };
+
+  const loadPricingList = async () => {
+    setIsLoading(true);
+    try {
+      const params: any = {
+        page: currentPage,
+        pageSize: pageSize,
+      };
+      if (keyword) params.keyword = keyword;
+      if (statusFilter) params.status = statusFilter;
+
+      const response = await pricingApi.getList(params);
+      if (response.success && response.data) {
+        setPricingList(response.data.list || []);
+        setTotalCount(response.data.total || 0);
+      }
+    } catch (error) {
+      console.error('加载定价列表失败:', error);
+      showNotification('加载定价列表失败', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    const map: Record<string, string> = {
+      PENDING: '待审批',
+      ACTIVE: '已生效',
+      EXPIRED: '已过期',
+    };
+    return map[status] || status;
+  };
+
+  const getStatusClass = (status: string) => {
+    const map: Record<string, string> = {
+      PENDING: 'bg-yellow-100 text-yellow-700',
+      ACTIVE: 'bg-green-100 text-green-700',
+      EXPIRED: 'bg-orange-100 text-orange-700',
+    };
+    return map[status] || 'bg-gray-100 text-gray-700';
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: name === 'supplierId' || name === 'materialId' || name === 'price' ? Number(value) || undefined : value }));
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const colors = {
+      success: 'bg-green-500',
+      error: 'bg-red-500',
+      info: 'bg-blue-500',
+    };
+    
+    const notification = document.createElement('div');
+    notification.className = `fixed top-20 right-6 z-50 px-6 py-4 rounded-lg text-white shadow-lg ${colors[type]}`;
+    notification.innerHTML = `
+      <div class="flex items-center gap-3">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.3s';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  };
+
+  const handleView = (item: PricingItem) => {
+    setCurrentPricing(item);
+    setShowDetailModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.supplierId || !formData.materialId || !formData.price || !formData.effectiveDate) {
+      showNotification('请填写必填字段', 'error');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await pricingApi.create(formData as any);
+      if (response.success) {
+        showNotification('定价创建成功', 'success');
+        setShowModal(false);
+        resetForm();
+        loadPricingList();
+      } else {
+        showNotification(response.message || '创建失败', 'error');
+      }
+    } catch (error) {
+      console.error('创建定价失败:', error);
+      showNotification('创建定价失败，请稍后重试', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      supplierId: undefined,
+      materialId: undefined,
+      price: 0,
+      currency: 'CNY',
+      unit: '件',
+      effectiveDate: '',
+      status: 'PENDING',
+    });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('确定要删除该定价记录吗？')) return;
+    
+    try {
+      const response = await pricingApi.delete(id);
+      if (response.success) {
+        showNotification('删除成功', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '删除失败', 'error');
+      }
+    } catch (error) {
+      console.error('删除定价失败:', error);
+      showNotification('删除失败，请稍后重试', 'error');
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return (
+    <Layout onLogout={onLogout}>
+      <div className="animate-fadeIn">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">定价管理</h1>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <i className="fas fa-home"></i>
+              <span>业务管理</span>
+              <span>/</span>
+              <span>定价管理</span>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white font-medium rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue transition-all flex items-center gap-2 shadow-sm"
+          >
+            <i className="fas fa-plus"></i>
+            新增定价
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex-1 min-w-[300px] relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i className="fas fa-search text-gray-400"></i>
+              </div>
+              <input
+                type="text"
+                placeholder="搜索定价编号..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue transition-all"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+            >
+              <option value="">全部状态</option>
+              <option value="PENDING">待审批</option>
+              <option value="ACTIVE">已生效</option>
+              <option value="EXPIRED">已过期</option>
+            </select>
+            <button 
+              onClick={loadPricingList}
+              className="px-4 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 flex items-center gap-2"
+            >
+              <i className="fas fa-filter"></i>
+              筛选
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">定价编号</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">供应商</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">物料</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">价格</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">生效日期</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">状态</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isLoading && pricingList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      加载中...
+                    </td>
+                  </tr>
+                ) : pricingList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      暂无数据
+                    </td>
+                  </tr>
+                ) : (
+                  pricingList.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.code}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{item.supplierName || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{item.materialName || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {item.currency || '¥'}{Number(item.price || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{item.effectiveDate || '-'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusClass(item.status)}`}>
+                          {getStatusText(item.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleView(item)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
+                            title="查看详情"
+                          >
+                            <i className="fas fa-eye"></i>
+                          </button>
+                          <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue">
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button 
+                            onClick={() => item.id && handleDelete(item.id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <div className="text-sm text-gray-500">共 {totalCount} 条记录</div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-500 disabled:opacity-50"
+              >
+                <i className="fas fa-chevron-left"></i>
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <button 
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-2 border rounded-lg ${currentPage === page ? 'bg-weyeah-blue border-weyeah-blue text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-weyeah-blue hover:text-weyeah-blue'}`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-600 hover:border-weyeah-blue hover:text-weyeah-blue disabled:opacity-50"
+              >
+                <i className="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">新增定价</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">供应商 *</label>
+                    <select
+                      name="supplierId"
+                      value={formData.supplierId || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    >
+                      <option value="">请选择供应商</option>
+                      {suppliers.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">物料 *</label>
+                    <select
+                      name="materialId"
+                      value={formData.materialId || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    >
+                      <option value="">请选择物料</option>
+                      {materials.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">价格 *</label>
+                    <input
+                      type="number"
+                      name="price"
+                      placeholder="请输入价格"
+                      value={formData.price || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">单位</label>
+                    <input
+                      type="text"
+                      name="unit"
+                      placeholder="如：件、套、桶"
+                      value={formData.unit || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">生效日期 *</label>
+                    <input
+                      type="date"
+                      name="effectiveDate"
+                      value={formData.effectiveDate || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">备注</label>
+                    <textarea
+                      name="remark"
+                      placeholder="请输入备注"
+                      value={formData.remark || ''}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDetailModal && currentPricing && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <h2 className="text-xl font-semibold text-gray-900">定价详情</h2>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <i className="fas fa-tag text-weyeah-blue"></i>
+                      基本信息
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">定价编号</div>
+                        <div className="font-medium text-gray-900">{currentPricing.code || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">供应商</div>
+                        <div className="font-medium text-gray-900">{currentPricing.supplierName || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">物料</div>
+                        <div className="font-medium text-gray-900">{currentPricing.materialName || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">状态</div>
+                        <div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(currentPricing.status)}`}>
+                            {getStatusText(currentPricing.status)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <i className="fas fa-money-bill text-weyeah-blue"></i>
+                      价格信息
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">价格</div>
+                        <div className="font-medium text-xl text-gray-900">
+                          {currentPricing.currency || '¥'}{Number(currentPricing.price || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">单位</div>
+                        <div className="font-medium text-gray-900">{currentPricing.unit || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">生效日期</div>
+                        <div className="font-medium text-gray-900">{currentPricing.effectiveDate || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">到期日期</div>
+                        <div className="font-medium text-gray-900">{currentPricing.expiryDate || '-'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {currentPricing.remark && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <i className="fas fa-file-text text-weyeah-blue"></i>
+                        备注
+                      </h3>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="font-medium text-gray-900">{currentPricing.remark}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end flex-shrink-0">
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}

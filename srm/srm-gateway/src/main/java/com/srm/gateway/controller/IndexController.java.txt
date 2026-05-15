@@ -1,0 +1,32 @@
+package com.srm.gateway.controller;
+
+import com.weyeah.srm.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Tag(name = "系统首页", description = "系统首页相关接口")
+@RestController
+public class IndexController {
+
+    @Operation(summary = "系统首页")
+    @GetMapping("/")
+    public Result<Map<String, Object>> index() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "SRM采购管理系统");
+        data.put("version", "1.0.0");
+        data.put("status", "running");
+        data.put("docs", "/swagger-ui/index.html");
+        return Result.success("系统运行正常", data);
+    }
+
+    @Operation(summary = "健康检查")
+    @GetMapping("/health")
+    public Result<String> health() {
+        return Result.success("健康检查通过");
+    }
+}

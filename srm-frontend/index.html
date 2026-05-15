@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRM采购管理系统 - Weyeah</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="loginPage" class="login-page">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                        <span class="logo-text">Weyeah</span>
+                    </div>
+                    <h1>SRM采购管理系统</h1>
+                    <p>企业级供应商关系管理平台</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="username" placeholder="请输入用户名" value="admin">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" placeholder="请输入密码" value="123456">
+                        </div>
+                    </div>
+                    <div class="form-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked>
+                            <span>记住登录</span>
+                        </label>
+                        <a href="#" class="forgot-password">忘记密码？</a>
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        登录系统
+                    </button>
+                </form>
+                <div class="login-footer">
+                    <p>© 2024 Weyeah 版权所有</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div id="mainApp" class="main-app" style="display: none;">
+        <!-- 顶部导航栏 -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="logo-small">
+                    <div class="logo-icon-small">
+                        <i class="fas fa-industry"></i>
+                    </div>
+                    <span class="logo-text-small">Weyeah</span>
+                </div>
+                <h2 class="system-title">SRM采购管理系统</h2>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span class="user-name">管理员</span>
+                    <span class="user-role">系统管理员</span>
+                </div>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </button>
+            </div>
+        </header>
+
+        <div class="app-content">
+            <!-- 侧边导航 -->
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <div class="nav-item active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>仪表盘</span>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">业务管理</div>
+                        <div class="nav-item" data-page="suppliers">
+                            <i class="fas fa-building"></i>
+                            <span>供应商管理</span>
+                        </div>
+                        <div class="nav-item" data-page="materials">
+                            <i class="fas fa-boxes"></i>
+                            <span>物料管理</span>
+                        </div>
+                        <div class="nav-item" data-page="contracts">
+                            <i class="fas fa-file-contract"></i>
+                            <span>合同管理</span>
+                        </div>
+                        <div class="nav-item" data-page="pricing">
+                            <i class="fas fa-tag"></i>
+                            <span>定价管理</span>
+                        </div>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">系统管理</div>
+                        <div class="nav-item" data-page="organization">
+                            <i class="fas fa-sitemap"></i>
+                            <span>组织架构</span>
+                        </div>
+                        <div class="nav-item" data-page="settings">
+                            <i class="fas fa-cog"></i>
+                            <span>系统设置</span>
+                        </div>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- 主内容区 -->
+            <main class="main-content">
+                <!-- 仪表盘页面 -->
+                <div id="dashboardPage" class="page active">
+                    <div class="page-header">
+                        <div>
+                            <h1>仪表盘</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>首页</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 统计卡片 -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">156</div>
+                                <div class="stat-label">供应商总数</div>
+                                <div class="stat-change positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>+12% 本月</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">2,847</div>
+                                <div class="stat-label">物料总数</div>
+                                <div class="stat-change positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>+8% 本月</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #ed8936 0%, #f6ad55 100%);">
+                                <i class="fas fa-file-contract"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">48</div>
+                                <div class="stat-label">执行中合同</div>
+                                <div class="stat-change neutral">
+                                    <i class="fas fa-minus"></i>
+                                    <span>持平</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">12</div>
+                                <div class="stat-label">待审批事项</div>
+                                <div class="stat-change warning">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>需要处理</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-grid">
+                        <!-- 待处理事项 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-list-check"></i>
+                                    待处理事项
+                                </h3>
+                                <a href="#" class="card-link">查看全部</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="task-list">
+                                    <div class="task-item">
+                                        <div class="task-icon" style="background: #fee2e2;">
+                                            <i class="fas fa-file-contract" style="color: #dc2626;"></i>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">供应商资质审核 - 上海机电设备有限公司</div>
+                                            <div class="task-meta">
+                                                <span><i class="fas fa-clock"></i> 2小时前</span>
+                                                <span class="task-priority" style="background: #fee2e2; color: #dc2626;">紧急</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="task-item">
+                                        <div class="task-icon" style="background: #fef3c7;">
+                                            <i class="fas fa-tag" style="color: #d97706;"></i>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">价格变更审批 - 钢材类物料价格调整</div>
+                                            <div class="task-meta">
+                                                <span><i class="fas fa-clock"></i> 昨天</span>
+                                                <span class="task-priority" style="background: #fef3c7; color: #d97706;">高</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="task-item">
+                                        <div class="task-icon" style="background: #dbeafe;">
+                                            <i class="fas fa-file-pen" style="color: #2563eb;"></i>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">合同审批 - 年度采购框架合同</div>
+                                            <div class="task-meta">
+                                                <span><i class="fas fa-clock"></i> 2天前</span>
+                                                <span class="task-priority" style="background: #dbeafe; color: #2563eb;">中</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="task-item">
+                                        <div class="task-icon" style="background: #f3f4f6;">
+                                            <i class="fas fa-comment-dots" style="color: #6b7280;"></i>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-title">供应商评估 - 季度评估报告</div>
+                                            <div class="task-meta">
+                                                <span><i class="fas fa-clock"></i> 3天前</span>
+                                                <span class="task-priority" style="background: #f3f4f6; color: #6b7280;">低</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 最近活动 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-clock-rotate-left"></i>
+                                    最近活动
+                                </h3>
+                                <a href="#" class="card-link">查看全部</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="activity-list">
+                                    <div class="activity-item">
+                                        <div class="activity-time">10:32</div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">新增供应商 - 苏州精密机械</div>
+                                            <div class="activity-user">张经理 操作</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-time">09:15</div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">合同签订 - NDA保密协议</div>
+                                            <div class="activity-user">李主管 操作</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-time">昨天 16:48</div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">物料信息更新 - 电机系列</div>
+                                            <div class="activity-user">王专员 操作</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-time">昨天 14:23</div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">价格审批通过</div>
+                                            <div class="activity-user">赵总监 审批</div>
+                                        </div>
+                                    </div>
+                                    <div class="activity-item">
+                                        <div class="activity-time">昨天 11:05</div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">供应商评级完成 - A级供应商</div>
+                                            <div class="activity-user">系统 自动</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 供应商管理页面 -->
+                <div id="suppliersPage" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>供应商管理</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>业务管理</span>
+                                <span>/</span>
+                                <span>供应商管理</span>
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showAddSupplier()">
+                            <i class="fas fa-plus"></i>
+                            新增供应商
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="search-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="搜索供应商名称、编码...">
+                            </div>
+                            <div class="filter-group">
+                                <select class="filter-select">
+                                    <option>全部状态</option>
+                                    <option>待审核</option>
+                                    <option>合格</option>
+                                    <option>暂停</option>
+                                </select>
+                                <select class="filter-select">
+                                    <option>全部评级</option>
+                                    <option>A级</option>
+                                    <option>B级</option>
+                                    <option>C级</option>
+                                </select>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-filter"></i>
+                                    筛选
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>供应商编码</th>
+                                        <th>供应商名称</th>
+                                        <th>联系人</th>
+                                        <th>联系电话</th>
+                                        <th>评级</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>SUP001</td>
+                                        <td>
+                                            <div class="supplier-name-cell">
+                                                <div class="supplier-avatar">上</div>
+                                                <span>上海机电设备有限公司</span>
+                                            </div>
+                                        </td>
+                                        <td>王经理</td>
+                                        <td>13800138001</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">A级</span></td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">合格</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>SUP002</td>
+                                        <td>
+                                            <div class="supplier-name-cell">
+                                                <div class="supplier-avatar" style="background: #2c5282;">苏</div>
+                                                <span>苏州精密机械有限公司</span>
+                                            </div>
+                                        </td>
+                                        <td>李总</td>
+                                        <td>13900139002</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">B级</span></td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">合格</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>SUP003</td>
+                                        <td>
+                                            <div class="supplier-name-cell">
+                                                <div class="supplier-avatar" style="background: #ed8936;">广</div>
+                                                <span>广州电子科技公司</span>
+                                            </div>
+                                        </td>
+                                        <td>陈经理</td>
+                                        <td>13700137003</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">C级</span></td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">待审核</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>SUP004</td>
+                                        <td>
+                                            <div class="supplier-name-cell">
+                                                <div class="supplier-avatar" style="background: #38a169;">北</div>
+                                                <span>北京钢铁集团</span>
+                                            </div>
+                                        </td>
+                                        <td>刘总</td>
+                                        <td>13600136004</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">A级</span></td>
+                                        <td><span class="badge" style="background: #fee2e2; color: #dc2626;">暂停</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination">
+                            <button class="pagination-btn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="pagination-btn active">1</button>
+                            <button class="pagination-btn">2</button>
+                            <button class="pagination-btn">3</button>
+                            <span class="pagination-info">共 156 条记录</span>
+                            <button class="pagination-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 物料管理页面 -->
+                <div id="materialsPage" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>物料管理</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>业务管理</span>
+                                <span>/</span>
+                                <span>物料管理</span>
+                            </p>
+                        </div>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            新增物料
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="search-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="搜索物料编码、名称、型号...">
+                            </div>
+                            <div class="filter-group">
+                                <select class="filter-select">
+                                    <option>全部分类</option>
+                                    <option>电子元器件</option>
+                                    <option>机械零件</option>
+                                    <option>原材料</option>
+                                    <option>包装材料</option>
+                                </select>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-filter"></i>
+                                    筛选
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>物料编码</th>
+                                        <th>物料名称</th>
+                                        <th>规格型号</th>
+                                        <th>品类</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>MAT001</td>
+                                        <td>伺服电机</td>
+                                        <td>SM-200-15</td>
+                                        <td>电子元器件</td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">启用</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>MAT002</td>
+                                        <td>精密轴承</td>
+                                        <td>BRG-304-20</td>
+                                        <td>机械零件</td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">启用</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>MAT003</td>
+                                        <td>钢板</td>
+                                        <td>ST-10mm-Q235</td>
+                                        <td>原材料</td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">启用</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="删除" style="color: #dc2626;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 合同管理页面 -->
+                <div id="contractsPage" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>合同管理</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>业务管理</span>
+                                <span>/</span>
+                                <span>合同管理</span>
+                            </p>
+                        </div>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            新增合同
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="search-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="搜索合同编号、标题...">
+                            </div>
+                            <div class="filter-group">
+                                <select class="filter-select">
+                                    <option>全部类型</option>
+                                    <option>NDA保密协议</option>
+                                    <option>采购合同</option>
+                                    <option>委托加工合同</option>
+                                </select>
+                                <select class="filter-select">
+                                    <option>全部状态</option>
+                                    <option>草稿</option>
+                                    <option>审批中</option>
+                                    <option>已生效</option>
+                                    <option>已结束</option>
+                                </select>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-filter"></i>
+                                    筛选
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>合同编号</th>
+                                        <th>合同标题</th>
+                                        <th>类型</th>
+                                        <th>供应商</th>
+                                        <th>签订日期</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>CON001</td>
+                                        <td>2024年度采购框架合同</td>
+                                        <td><span class="badge" style="background: #dbeafe; color: #2563eb;">采购合同</span></td>
+                                        <td>上海机电设备有限公司</td>
+                                        <td>2024-01-15</td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">已生效</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="导出PDF" style="color: #dc2626;">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>CON002</td>
+                                        <td>NDA保密协议</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">NDA保密协议</span></td>
+                                        <td>苏州精密机械有限公司</td>
+                                        <td>2024-02-20</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">审批中</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="导出PDF" style="color: #dc2626;">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 定价管理页面 -->
+                <div id="pricingPage" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>定价管理</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>业务管理</span>
+                                <span>/</span>
+                                <span>定价管理</span>
+                            </p>
+                        </div>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            新增定价
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="search-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="搜索定价编号、供应商、物料...">
+                            </div>
+                            <div class="filter-group">
+                                <select class="filter-select">
+                                    <option>全部状态</option>
+                                    <option>待审批</option>
+                                    <option>已生效</option>
+                                    <option>已过期</option>
+                                </select>
+                                <button class="btn btn-secondary">
+                                    <i class="fas fa-filter"></i>
+                                    筛选
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>定价编号</th>
+                                        <th>供应商</th>
+                                        <th>物料</th>
+                                        <th>价格</th>
+                                        <th>生效日期</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>PRC001</td>
+                                        <td>上海机电设备有限公司</td>
+                                        <td>伺服电机</td>
+                                        <td>¥ 1,250.00</td>
+                                        <td>2024-01-01</td>
+                                        <td><span class="badge" style="background: #d1fae5; color: #059669;">已生效</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="变更">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>PRC002</td>
+                                        <td>苏州精密机械有限公司</td>
+                                        <td>精密轴承</td>
+                                        <td>¥ 85.00</td>
+                                        <td>2024-02-01</td>
+                                        <td><span class="badge" style="background: #fef3c7; color: #d97706;">待审批</span></td>
+                                        <td>
+                                            <div class="table-actions">
+                                                <button class="table-action-btn" title="查看">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="table-action-btn" title="变更">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 组织架构页面 -->
+                <div id="organizationPage" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>组织架构</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>系统管理</span>
+                                <span>/</span>
+                                <span>组织架构</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="content-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-sitemap"></i>
+                                    部门管理
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="org-tree">
+                                    <div class="org-item">
+                                        <i class="fas fa-chevron-down"></i>
+                                        <span class="org-name">
+                                            <i class="fas fa-building" style="color: #1a365d;"></i>
+                                            总公司
+                                        </span>
+                                    </div>
+                                    <div class="org-children">
+                                        <div class="org-item">
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="org-name">
+                                                <i class="fas fa-building" style="color: #2c5282;"></i>
+                                                采购部
+                                            </span>
+                                        </div>
+                                        <div class="org-item">
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="org-name">
+                                                <i class="fas fa-building" style="color: #2c5282;"></i>
+                                                质量部
+                                            </span>
+                                        </div>
+                                        <div class="org-item">
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="org-name">
+                                                <i class="fas fa-building" style="color: #2c5282;"></i>
+                                                技术部
+                                            </span>
+                                        </div>
+                                        <div class="org-item">
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="org-name">
+                                                <i class="fas fa-building" style="color: #2c5282;"></i>
+                                                财务部
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-users"></i>
+                                    人员管理
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>工号</th>
+                                                <th>姓名</th>
+                                                <th>部门</th>
+                                                <th>职位</th>
+                                                <th>状态</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>EMP001</td>
+                                                <td>张三</td>
+                                                <td>采购部</td>
+                                                <td>经理</td>
+                                                <td><span class="badge" style="background: #d1fae5; color: #059669;">在职</span></td>
+                                                <td>
+                                                    <div class="table-actions">
+                                                        <button class="table-action-btn"><i class="fas fa-eye"></i></button>
+                                                        <button class="table-action-btn"><i class="fas fa-edit"></i></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>EMP002</td>
+                                                <td>李四</td>
+                                                <td>采购部</td>
+                                                <td>主管</td>
+                                                <td><span class="badge" style="background: #d1fae5; color: #059669;">在职</span></td>
+                                                <td>
+                                                    <div class="table-actions">
+                                                        <button class="table-action-btn"><i class="fas fa-eye"></i></button>
+                                                        <button class="table-action-btn"><i class="fas fa-edit"></i></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统设置页面 -->
+                <div id="settingsPage" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>系统设置</h1>
+                            <p class="breadcrumb">
+                                <i class="fas fa-home"></i>
+                                <span>系统管理</span>
+                                <span>/</span>
+                                <span>系统设置</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                        <div style="padding: 40px; text-align: center; color: #6b7280;">
+                            <i class="fas fa-cog" style="font-size: 48px; margin-bottom: 16px;"></i>
+                            <p>系统设置页面开发中...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 新增供应商模态框 -->
+    <div id="addSupplierModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeAddSupplier()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>新增供应商</h2>
+                <button class="modal-close" onclick="closeAddSupplier()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>供应商编码 *</label>
+                        <input type="text" placeholder="自动生成" readonly style="background: #f3f4f6;">
+                    </div>
+                    <div class="form-group">
+                        <label>供应商名称 *</label>
+                        <input type="text" placeholder="请输入供应商名称">
+                    </div>
+                    <div class="form-group">
+                        <label>联系人 *</label>
+                        <input type="text" placeholder="请输入联系人">
+                    </div>
+                    <div class="form-group">
+                        <label>联系电话 *</label>
+                        <input type="text" placeholder="请输入联系电话">
+                    </div>
+                    <div class="form-group">
+                        <label>电子邮箱</label>
+                        <input type="email" placeholder="请输入电子邮箱">
+                    </div>
+                    <div class="form-group">
+                        <label>供应商分类</label>
+                        <select>
+                            <option>请选择分类</option>
+                            <option>制造商</option>
+                            <option>经销商</option>
+                            <option>代理商</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>供应商地址</label>
+                        <input type="text" placeholder="请输入详细地址">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>备注说明</label>
+                        <textarea rows="4" placeholder="请输入备注说明"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddSupplier()">取消</button>
+                <button class="btn btn-primary" onclick="saveSupplier()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
