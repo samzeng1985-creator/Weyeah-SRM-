@@ -83,6 +83,34 @@ export interface Contract {
   updatedAt?: string;
 }
 
+export interface Logistics {
+  id?: number;
+  code?: string;
+  contractId: number;
+  contractCode?: string;
+  logisticsNo?: string;
+  logisticsCompany?: string;
+  senderName?: string;
+  senderContact?: string;
+  senderPhone?: string;
+  senderAddress?: string;
+  receiverName?: string;
+  receiverContact?: string;
+  receiverPhone?: string;
+  receiverAddress?: string;
+  warehouse?: string;
+  deliveryAddress?: string;
+  estimatedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+  actualArrivalDate?: string;
+  status?: string;
+  currentLocation?: string;
+  trackingInfo?: string;
+  remark?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   id?: number;
   username: string;

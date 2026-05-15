@@ -8,6 +8,7 @@ import Pricing from './pages/Pricing';
 import Organization from './pages/Organization';
 import Settings from './pages/Settings';
 import Categories from './pages/Categories';
+import LogisticsPage from './pages/Logistics';
 import { useState, useEffect } from 'react';
 
 function App() {
@@ -66,6 +67,7 @@ function AppRoutes({ onLogout }: { onLogout: () => void }) {
       <Route path="/categories" element={<Categories onLogout={onLogout} />} />
       <Route path="/contracts" element={<Contracts onLogout={onLogout} />} />
       <Route path="/pricing" element={<Pricing onLogout={onLogout} />} />
+      <Route path="/logistics" element={<LogisticsPage onLogout={onLogout} />} />
       <Route path="/organization" element={<Organization onLogout={onLogout} />} />
       <Route path="/settings" element={<Settings onLogout={onLogout} />} />
     </Routes>

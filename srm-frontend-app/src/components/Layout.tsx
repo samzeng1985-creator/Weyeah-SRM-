@@ -16,6 +16,7 @@ export default function Layout({ children, onLogout }: LayoutProps) {
     { path: '/materials', icon: 'fas fa-boxes', label: '物料管理' },
     { path: '/categories', icon: 'fas fa-sitemap', label: '品类管理' },
     { path: '/contracts', icon: 'fas fa-file-contract', label: '合同管理' },
+    { path: '/logistics', icon: 'fas fa-truck', label: '物流管理' },
     { path: '/pricing', icon: 'fas fa-tag', label: '定价管理' },
     { path: '/organization', icon: 'fas fa-users', label: '组织架构' },
     { path: '/settings', icon: 'fas fa-cog', label: '系统设置' },

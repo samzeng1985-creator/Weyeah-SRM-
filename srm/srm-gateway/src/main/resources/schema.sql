@@ -344,3 +344,35 @@ CREATE TABLE IF NOT EXISTS contract_item (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     del_flag INT DEFAULT 0
 );
+
+-- 物流记录表
+CREATE TABLE IF NOT EXISTS logistics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    contract_id BIGINT NOT NULL,
+    contract_code VARCHAR(50),
+    logistics_no VARCHAR(100),
+    logistics_company VARCHAR(200),
+    sender_name VARCHAR(100),
+    sender_contact VARCHAR(100),
+    sender_phone VARCHAR(50),
+    sender_address VARCHAR(500),
+    receiver_name VARCHAR(100),
+    receiver_contact VARCHAR(100),
+    receiver_phone VARCHAR(50),
+    receiver_address VARCHAR(500),
+    warehouse VARCHAR(100),
+    delivery_address VARCHAR(500),
+    estimated_delivery_date DATE,
+    actual_delivery_date DATE,
+    actual_arrival_date DATE,
+    status VARCHAR(50) DEFAULT 'PENDING',
+    current_location VARCHAR(200),
+    tracking_info TEXT,
+    remark TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    del_flag INT DEFAULT 0
+);

@@ -643,6 +643,13 @@ export default function Contracts({ onLogout }: ContractsProps) {
               </div>
               <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 flex-shrink-0">
                 <button
+                  onClick={() => window.location.href = `/logistics?contractId=${currentContract.id}`}
+                  className="px-6 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <i className="fas fa-truck"></i>
+                  查看物流
+                </button>
+                <button
                   onClick={() => handleExportPDF(currentContract)}
                   className="px-6 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                 >
