@@ -50,16 +50,50 @@ CREATE TABLE IF NOT EXISTS material (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(200) NOT NULL,
+    model VARCHAR(200),
     specification VARCHAR(500),
+    category_id BIGINT,
     category VARCHAR(100),
+    material_type VARCHAR(50),
+    applicable_models VARCHAR(500),
+    brand VARCHAR(100),
+    manufacturer VARCHAR(200),
+    origin_country VARCHAR(100),
     unit VARCHAR(50),
+    auxiliary_unit VARCHAR(50),
+    conversion_ratio DECIMAL(10,4),
+    min_order_quantity DECIMAL(18,4),
+    safety_stock DECIMAL(18,4),
+    warranty_period INT,
     description TEXT,
     status VARCHAR(20) DEFAULT 'ACTIVE',
+    image_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by BIGINT,
     updated_by BIGINT,
     del_flag INT DEFAULT 0
+);
+
+-- 物料供应商关联表
+CREATE TABLE IF NOT EXISTS material_supplier (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    material_id BIGINT NOT NULL,
+    material_code VARCHAR(50),
+    supplier_id BIGINT NOT NULL,
+    supplier_code VARCHAR(50),
+    supplier_name VARCHAR(200),
+    is_primary BOOLEAN DEFAULT FALSE,
+    lead_time INT,
+    moq DECIMAL(18,4),
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    remark VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    del_flag INT DEFAULT 0,
+    UNIQUE KEY uk_material_supplier (material_id, supplier_id)
 );
 
 -- 合同表

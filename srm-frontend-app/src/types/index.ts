@@ -58,11 +58,42 @@ export interface Material {
   id?: number;
   code: string;
   name: string;
+  model?: string;
   specification?: string;
+  categoryId?: number;
   category?: string;
+  materialType?: string;
+  applicableModels?: string;
+  brand?: string;
+  manufacturer?: string;
+  originCountry?: string;
   unit?: string;
+  auxiliaryUnit?: string;
+  conversionRatio?: number;
+  minOrderQuantity?: number;
+  safetyStock?: number;
+  warrantyPeriod?: number;
   description?: string;
   status: string;
+  imageUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MaterialSupplier {
+  id?: number;
+  materialId: number;
+  materialCode?: string;
+  supplierId: number;
+  supplierCode?: string;
+  supplierName?: string;
+  supplierType?: string;
+  supplierStatus?: string;
+  isPrimary?: boolean;
+  leadTime?: number;
+  moq?: number;
+  status?: string;
+  remark?: string;
   createdAt?: string;
   updatedAt?: string;
 }
