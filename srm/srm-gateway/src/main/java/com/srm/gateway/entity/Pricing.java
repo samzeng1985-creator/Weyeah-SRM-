@@ -22,6 +22,15 @@ public class Pricing {
     private Long supplierId;
     
     private BigDecimal price;
+    
+    private BigDecimal taxRate;
+    
+    @TableField("price_with_tax")
+    private BigDecimal priceWithTax;
+    
+    @TableField("min_order_qty")
+    private BigDecimal minOrderQty;
+    
     private String currency;
     private String unit;
     
@@ -31,8 +40,29 @@ public class Pricing {
     @TableField("expiry_date")
     private LocalDate expiryDate;
     
+    @TableField("price_terms")
+    private String priceTerms;
+    
+    @TableField("payment_terms")
+    private String paymentTerms;
+    
+    @TableField("delivery_cycle")
+    private Integer deliveryCycle;
+    
     private String status;
     private String remark;
+    
+    @TableField("price_change_reason")
+    private String priceChangeReason;
+    
+    @TableField("price_change_detail")
+    private String priceChangeDetail;
+    
+    @TableField("original_price")
+    private BigDecimal originalPrice;
+    
+    @TableField("price_increase_rate")
+    private BigDecimal priceIncreaseRate;
     
     @TableField("created_at")
     private LocalDateTime createdAt;
@@ -175,5 +205,85 @@ public class Pricing {
 
     public void setDelFlag(Integer delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public BigDecimal getTaxRate() {
+        return taxRate;
+    }
+
+    public void setTaxRate(BigDecimal taxRate) {
+        this.taxRate = taxRate;
+    }
+
+    public BigDecimal getPriceWithTax() {
+        return priceWithTax;
+    }
+
+    public void setPriceWithTax(BigDecimal priceWithTax) {
+        this.priceWithTax = priceWithTax;
+    }
+
+    public BigDecimal getMinOrderQty() {
+        return minOrderQty;
+    }
+
+    public void setMinOrderQty(BigDecimal minOrderQty) {
+        this.minOrderQty = minOrderQty;
+    }
+
+    public String getPriceTerms() {
+        return priceTerms;
+    }
+
+    public void setPriceTerms(String priceTerms) {
+        this.priceTerms = priceTerms;
+    }
+
+    public String getPaymentTerms() {
+        return paymentTerms;
+    }
+
+    public void setPaymentTerms(String paymentTerms) {
+        this.paymentTerms = paymentTerms;
+    }
+
+    public Integer getDeliveryCycle() {
+        return deliveryCycle;
+    }
+
+    public void setDeliveryCycle(Integer deliveryCycle) {
+        this.deliveryCycle = deliveryCycle;
+    }
+
+    public String getPriceChangeReason() {
+        return priceChangeReason;
+    }
+
+    public void setPriceChangeReason(String priceChangeReason) {
+        this.priceChangeReason = priceChangeReason;
+    }
+
+    public String getPriceChangeDetail() {
+        return priceChangeDetail;
+    }
+
+    public void setPriceChangeDetail(String priceChangeDetail) {
+        this.priceChangeDetail = priceChangeDetail;
+    }
+
+    public BigDecimal getOriginalPrice() {
+        return originalPrice;
+    }
+
+    public void setOriginalPrice(BigDecimal originalPrice) {
+        this.originalPrice = originalPrice;
+    }
+
+    public BigDecimal getPriceIncreaseRate() {
+        return priceIncreaseRate;
+    }
+
+    public void setPriceIncreaseRate(BigDecimal priceIncreaseRate) {
+        this.priceIncreaseRate = priceIncreaseRate;
     }
 }

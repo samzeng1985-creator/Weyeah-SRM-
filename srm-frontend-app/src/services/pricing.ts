@@ -8,12 +8,36 @@ export interface PricingRecord {
   supplierId: number;
   supplierName?: string;
   price: number;
+  taxRate?: number;
+  priceWithTax?: number;
   currency?: string;
   unit?: string;
+  minOrderQty?: number;
   effectiveDate?: string;
   expiryDate?: string;
+  priceTerms?: string;
+  paymentTerms?: string;
+  deliveryCycle?: number;
   status: string;
   remark?: string;
+  priceChangeReason?: string;
+  priceChangeDetail?: string;
+  priceIncreaseRate?: number;
+  originalPrice?: number;
+}
+
+export interface PriceCheckResult {
+  hasCurrentPrice: boolean;
+  requiresReason: boolean;
+  originalPrice?: number;
+  newPrice?: number;
+  priceIncreaseRate?: number;
+  message?: string;
+}
+
+export interface OverlapCheckResult {
+  hasOverlap: boolean;
+  message?: string;
 }
 
 export const pricingApi = {
@@ -25,11 +49,11 @@ export const pricingApi = {
     return api.get(`/api/pricing/${id}`);
   },
 
-  create: (data: Partial<PricingRecord>): Promise<ApiResponse<number>> => {
+  create: (data: Partial<PricingRecord>): Promise<ApiResponse<any>> => {
     return api.post('/api/pricing', data);
   },
 
-  update: (id: number, data: Partial<PricingRecord>): Promise<ApiResponse<void>> => {
+  update: (id: number, data: Partial<PricingRecord>): Promise<ApiResponse<any>> => {
     return api.put(`/api/pricing/${id}`, data);
   },
 
@@ -43,5 +67,17 @@ export const pricingApi = {
 
   getMaterials: (): Promise<ApiResponse<any[]>> => {
     return api.get('/api/pricing/materials');
+  },
+
+  getCurrentPrice: (supplierId: number, materialId: number): Promise<ApiResponse<any>> => {
+    return api.get('/api/pricing/current-price', { params: { supplierId, materialId } });
+  },
+
+  checkOverlap: (data: Partial<PricingRecord>): Promise<ApiResponse<OverlapCheckResult>> => {
+    return api.post('/api/pricing/check-overlap', data);
+  },
+
+  checkPriceIncrease: (data: Partial<PricingRecord>): Promise<ApiResponse<PriceCheckResult>> => {
+    return api.post('/api/pricing/check-price-increase', data);
   },
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { pricingApi } from '../services/pricing';
+import { pricingApi, PriceCheckResult } from '../services/pricing';
 
 interface PricingProps {
   onLogout: () => void;
@@ -14,12 +14,22 @@ interface PricingItem {
   materialId?: number;
   materialName?: string;
   price: number;
+  taxRate?: number;
+  priceWithTax?: number;
   currency?: string;
   unit?: string;
+  minOrderQty?: number;
   effectiveDate?: string;
   expiryDate?: string;
+  priceTerms?: string;
+  paymentTerms?: string;
+  deliveryCycle?: number;
   status: string;
   remark?: string;
+  priceChangeReason?: string;
+  priceChangeDetail?: string;
+  priceIncreaseRate?: number;
+  originalPrice?: number;
 }
 
 interface Supplier {
@@ -34,14 +44,19 @@ interface Material {
 
 export default function Pricing({ onLogout }: PricingProps) {
   const [showModal, setShowModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('action') === 'create') {
       setShowModal(true);
+      setIsEditMode(false);
+      setEditId(null);
       history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [currentPricing, setCurrentPricing] = useState<PricingItem | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -53,14 +68,20 @@ export default function Pricing({ onLogout }: PricingProps) {
   const [pageSize] = useState(10);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [showReasonInput, setShowReasonInput] = useState(false);
+  const [priceIncreaseInfo, setPriceIncreaseInfo] = useState<PriceCheckResult | null>(null);
 
   const [formData, setFormData] = useState<Partial<PricingItem>>({
     supplierId: undefined,
     materialId: undefined,
     price: 0,
+    taxRate: 13,
     currency: 'CNY',
     unit: '件',
     effectiveDate: '',
+    expiryDate: '',
+    minOrderQty: 1,
     status: 'PENDING',
   });
 
@@ -68,6 +89,12 @@ export default function Pricing({ onLogout }: PricingProps) {
     loadPricingList();
     loadSelectOptions();
   }, [currentPage, keyword, statusFilter]);
+
+  useEffect(() => {
+    if (formData.supplierId && formData.materialId && formData.price && formData.price > 0) {
+      checkPriceIncrease();
+    }
+  }, [formData.supplierId, formData.materialId, formData.price]);
 
   const loadSelectOptions = async () => {
     try {
@@ -109,6 +136,32 @@ export default function Pricing({ onLogout }: PricingProps) {
     }
   };
 
+  const checkPriceIncrease = async () => {
+    if (!formData.supplierId || !formData.materialId || !formData.price) {
+      return;
+    }
+
+    try {
+      const response = await pricingApi.checkPriceIncrease({
+        supplierId: formData.supplierId,
+        materialId: formData.materialId,
+        price: formData.price,
+      });
+
+      if (response.success && response.data) {
+        setPriceIncreaseInfo(response.data);
+        
+        if (response.data.requiresReason) {
+          setShowReasonInput(true);
+        } else {
+          setShowReasonInput(false);
+        }
+      }
+    } catch (error) {
+      console.error('检查涨价幅度失败:', error);
+    }
+  };
+
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
       PENDING: '待审批',
@@ -129,7 +182,13 @@ export default function Pricing({ onLogout }: PricingProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'supplierId' || name === 'materialId' || name === 'price' ? Number(value) || undefined : value }));
+    if (name === 'supplierId' || name === 'materialId') {
+      setFormData(prev => ({ ...prev, [name]: Number(value) || undefined }));
+    } else if (name === 'price' || name === 'taxRate' || name === 'minOrderQty' || name === 'deliveryCycle') {
+      setFormData(prev => ({ ...prev, [name]: Number(value) || undefined }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -161,26 +220,64 @@ export default function Pricing({ onLogout }: PricingProps) {
     setShowDetailModal(true);
   };
 
+  const handleEdit = (item: PricingItem) => {
+    setFormData({
+      supplierId: item.supplierId,
+      materialId: item.materialId,
+      price: item.price,
+      taxRate: item.taxRate || 13,
+      currency: item.currency || 'CNY',
+      unit: item.unit || '件',
+      minOrderQty: item.minOrderQty || 1,
+      effectiveDate: item.effectiveDate,
+      expiryDate: item.expiryDate,
+      priceTerms: item.priceTerms,
+      paymentTerms: item.paymentTerms,
+      deliveryCycle: item.deliveryCycle,
+      remark: item.remark,
+      status: item.status,
+    });
+    setIsEditMode(true);
+    setEditId(item.id || null);
+    setShowModal(true);
+  };
+
   const handleSave = async () => {
     if (!formData.supplierId || !formData.materialId || !formData.price || !formData.effectiveDate) {
-      showNotification('请填写必填字段', 'error');
+      showNotification('请填写必填字段（供应商、物料、价格、生效日期）', 'error');
+      return;
+    }
+
+    if (priceIncreaseInfo?.requiresReason && !formData.priceChangeReason) {
+      showNotification('涨价幅度超过5%，必须填写涨价原因', 'error');
+      return;
+    }
+
+    if (formData.priceChangeReason === 'OTHER' && !formData.priceChangeDetail) {
+      showNotification('选择"其他"原因时，必须填写原因详情', 'error');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await pricingApi.create(formData as any);
+      let response;
+      if (isEditMode && editId) {
+        response = await pricingApi.update(editId, formData as any);
+      } else {
+        response = await pricingApi.create(formData as any);
+      }
+
       if (response.success) {
-        showNotification('定价创建成功', 'success');
+        showNotification(isEditMode ? '定价更新成功' : '定价创建成功', 'success');
         setShowModal(false);
         resetForm();
         loadPricingList();
       } else {
-        showNotification(response.message || '创建失败', 'error');
+        showNotification(response.message || (isEditMode ? '更新失败' : '创建失败'), 'error');
       }
     } catch (error) {
-      console.error('创建定价失败:', error);
-      showNotification('创建定价失败，请稍后重试', 'error');
+      console.error('保存定价失败:', error);
+      showNotification('保存定价失败，请稍后重试', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -191,11 +288,18 @@ export default function Pricing({ onLogout }: PricingProps) {
       supplierId: undefined,
       materialId: undefined,
       price: 0,
+      taxRate: 13,
       currency: 'CNY',
       unit: '件',
       effectiveDate: '',
+      expiryDate: '',
+      minOrderQty: 1,
       status: 'PENDING',
     });
+    setIsEditMode(false);
+    setEditId(null);
+    setShowReasonInput(false);
+    setPriceIncreaseInfo(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -233,6 +337,7 @@ export default function Pricing({ onLogout }: PricingProps) {
           <button
             onClick={() => {
               resetForm();
+              setIsEditMode(false);
               setShowModal(true);
             }}
             className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white font-medium rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue transition-all flex items-center gap-2 shadow-sm"
@@ -278,48 +383,50 @@ export default function Pricing({ onLogout }: PricingProps) {
 
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[900px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">定价编号</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">供应商</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">物料</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">价格</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">生效日期</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">状态</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">操作</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">定价编号</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">供应商</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">物料</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">价格</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">税率</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">生效日期</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">状态</th>
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading && pricingList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       <i className="fas fa-spinner fa-spin mr-2"></i>
                       加载中...
                     </td>
                   </tr>
                 ) : pricingList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       暂无数据
                     </td>
                   </tr>
                 ) : (
                   pricingList.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.code}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{item.supplierName || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{item.materialName || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-4 py-4 text-sm text-gray-900 font-medium">{item.code}</td>
+                      <td className="px-4 py-4 text-sm text-gray-900">{item.supplierName || '-'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-900">{item.materialName || '-'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-900 font-medium">
                         {item.currency || '¥'}{Number(item.price || 0).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{item.effectiveDate || '-'}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4 text-sm text-gray-900">{item.taxRate || 13}%</td>
+                      <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{item.effectiveDate || '-'}</td>
+                      <td className="px-4 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusClass(item.status)}`}>
                           {getStatusText(item.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={() => handleView(item)}
@@ -328,12 +435,17 @@ export default function Pricing({ onLogout }: PricingProps) {
                           >
                             <i className="fas fa-eye"></i>
                           </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue">
+                          <button 
+                            onClick={() => handleEdit(item)}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
+                            title="编辑"
+                          >
                             <i className="fas fa-edit"></i>
                           </button>
                           <button 
                             onClick={() => item.id && handleDelete(item.id)}
                             className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600"
+                            title="删除"
                           >
                             <i className="fas fa-trash"></i>
                           </button>
@@ -380,10 +492,10 @@ export default function Pricing({ onLogout }: PricingProps) {
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn overflow-y-auto py-8">
+            <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl my-8">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">新增定价</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{isEditMode ? '编辑定价' : '新增定价'}</h2>
                 <button
                   onClick={() => setShowModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
@@ -433,12 +545,57 @@ export default function Pricing({ onLogout }: PricingProps) {
                     />
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">税率 (%)</label>
+                    <select
+                      name="taxRate"
+                      value={formData.taxRate || 13}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    >
+                      <option value={0}>0%</option>
+                      <option value={6}>6%</option>
+                      <option value={13}>13%</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">含税单价</label>
+                    <input
+                      type="text"
+                      value={formData.price && formData.taxRate 
+                        ? (formData.price * (1 + formData.taxRate / 100)).toFixed(2) 
+                        : '-'}
+                      disabled
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">单位</label>
                     <input
                       type="text"
                       name="unit"
                       placeholder="如：件、套、桶"
                       value={formData.unit || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">最小起订量</label>
+                    <input
+                      type="number"
+                      name="minOrderQty"
+                      value={formData.minOrderQty || 1}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">交货周期（天）</label>
+                    <input
+                      type="number"
+                      name="deliveryCycle"
+                      placeholder="交货天数"
+                      value={formData.deliveryCycle || ''}
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
                     />
@@ -453,6 +610,102 @@ export default function Pricing({ onLogout }: PricingProps) {
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">到期日期</label>
+                    <input
+                      type="date"
+                      name="expiryDate"
+                      value={formData.expiryDate || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">价格条款</label>
+                    <input
+                      type="text"
+                      name="priceTerms"
+                      placeholder="如：FOB、CIF"
+                      value={formData.priceTerms || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">付款条款</label>
+                    <input
+                      type="text"
+                      name="paymentTerms"
+                      placeholder="如：30天账期"
+                      value={formData.paymentTerms || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                    />
+                  </div>
+
+                  {priceIncreaseInfo && priceIncreaseInfo.hasCurrentPrice && (
+                    <div className="md:col-span-2 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <i className="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+                        <div className="flex-1">
+                          <div className="font-medium text-yellow-800 mb-2">
+                            涨价幅度预警
+                          </div>
+                          <div className="text-sm text-yellow-700 space-y-1">
+                            <div>当前生效价格：¥{priceIncreaseInfo.originalPrice?.toLocaleString()}</div>
+                            <div>新价格：¥{priceIncreaseInfo.newPrice?.toLocaleString()}</div>
+                            <div className="font-bold">
+                              涨价幅度：{priceIncreaseInfo.priceIncreaseRate?.toFixed(2)}%
+                            </div>
+                            {priceIncreaseInfo.requiresReason && (
+                              <div className="text-red-600 font-medium mt-2">
+                                ⚠️ 涨价幅度超过5%，必须填写涨价原因
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {showReasonInput && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        涨价原因 * <span className="text-red-500">（涨价超过5%必填）</span>
+                      </label>
+                      <select
+                        name="priceChangeReason"
+                        value={formData.priceChangeReason || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                      >
+                        <option value="">请选择涨价原因</option>
+                        <option value="RAW_MATERIAL">原材料上涨</option>
+                        <option value="LABOR_COST">人工成本上涨</option>
+                        <option value="EXCHANGE_RATE">汇率调整</option>
+                        <option value="SUPPLIER_ADJUST">供应商调整</option>
+                        <option value="MARKET">市场行情</option>
+                        <option value="OTHER">其他</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {showReasonInput && formData.priceChangeReason === 'OTHER' && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        原因详情 * <span className="text-red-500">（选择"其他"时必填）</span>
+                      </label>
+                      <textarea
+                        name="priceChangeDetail"
+                        placeholder="请详细说明涨价原因"
+                        value={formData.priceChangeDetail || ''}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
+                      />
+                    </div>
+                  )}
+
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">备注</label>
                     <textarea
@@ -479,7 +732,7 @@ export default function Pricing({ onLogout }: PricingProps) {
                   className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue disabled:opacity-50 flex items-center gap-2"
                 >
                   {isLoading && <i className="fas fa-spinner fa-spin"></i>}
-                  保存
+                  {isEditMode ? '更新' : '保存'}
                 </button>
               </div>
             </div>
@@ -536,9 +789,19 @@ export default function Pricing({ onLogout }: PricingProps) {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">价格</div>
+                        <div className="text-sm text-gray-500 mb-1">价格（不含税）</div>
                         <div className="font-medium text-xl text-gray-900">
                           {currentPricing.currency || '¥'}{Number(currentPricing.price || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">税率</div>
+                        <div className="font-medium text-gray-900">{currentPricing.taxRate || 13}%</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">含税单价</div>
+                        <div className="font-medium text-xl text-gray-900">
+                          {currentPricing.currency || '¥'}{Number(currentPricing.priceWithTax || (currentPricing.price || 0) * 1.13).toLocaleString()}
                         </div>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
@@ -546,15 +809,63 @@ export default function Pricing({ onLogout }: PricingProps) {
                         <div className="font-medium text-gray-900">{currentPricing.unit || '-'}</div>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">最小起订量</div>
+                        <div className="font-medium text-gray-900">{currentPricing.minOrderQty || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">交货周期</div>
+                        <div className="font-medium text-gray-900">{currentPricing.deliveryCycle ? `${currentPricing.deliveryCycle}天` : '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="text-sm text-gray-500 mb-1">生效日期</div>
                         <div className="font-medium text-gray-900">{currentPricing.effectiveDate || '-'}</div>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="text-sm text-gray-500 mb-1">到期日期</div>
-                        <div className="font-medium text-gray-900">{currentPricing.expiryDate || '-'}</div>
+                        <div className="font-medium text-gray-900">{currentPricing.expiryDate || '长期有效'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">价格条款</div>
+                        <div className="font-medium text-gray-900">{currentPricing.priceTerms || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">付款条款</div>
+                        <div className="font-medium text-gray-900">{currentPricing.paymentTerms || '-'}</div>
                       </div>
                     </div>
                   </div>
+
+                  {currentPricing.priceIncreaseRate && currentPricing.priceIncreaseRate > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <i className="fas fa-chart-line text-weyeah-blue"></i>
+                        价格变更信息
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-yellow-50 p-4 rounded-lg">
+                          <div className="text-sm text-gray-500 mb-1">原价</div>
+                          <div className="font-medium text-gray-900">
+                            ¥{Number(currentPricing.originalPrice || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="bg-yellow-50 p-4 rounded-lg">
+                          <div className="text-sm text-gray-500 mb-1">涨价幅度</div>
+                          <div className="font-medium text-yellow-700">
+                            +{currentPricing.priceIncreaseRate.toFixed(2)}%
+                          </div>
+                        </div>
+                        {currentPricing.priceChangeReason && (
+                          <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg">
+                            <div className="text-sm text-gray-500 mb-1">涨价原因</div>
+                            <div className="font-medium text-gray-900">{currentPricing.priceChangeReason}</div>
+                            {currentPricing.priceChangeDetail && (
+                              <div className="mt-2 text-sm text-gray-600">{currentPricing.priceChangeDetail}</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {currentPricing.remark && (
                     <div>
