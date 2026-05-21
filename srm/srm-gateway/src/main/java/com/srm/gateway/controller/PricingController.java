@@ -280,8 +280,8 @@ public class PricingController {
     @Operation(summary = "获取当前生效价格")
     @GetMapping("/current-price")
     public Result<Map<String, Object>> getCurrentPrice(
-            @RequestParam Long supplierId,
-            @RequestParam Long materialId) {
+            @RequestParam(name = "supplierId") Long supplierId,
+            @RequestParam(name = "materialId") Long materialId) {
         log.info("获取当前生效价格, supplierId={}, materialId={}", supplierId, materialId);
         
         BigDecimal currentPrice = getCurrentEffectivePrice(supplierId, materialId);

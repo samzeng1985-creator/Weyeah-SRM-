@@ -26,6 +26,8 @@
 - ✅ 合同类型支持（NDA/采购合同/委托加工）
 - ✅ 合同明细管理
 - ✅ 合同PDF导出
+- ✅ **新增：合同审批流程完整实现！**（2026-05-21）
+- ✅ **新增：三级分级审批（LEVEL1/LEVEL2/LEVEL3）**
 
 ### 4. 组织架构管理
 - ✅ 部门管理
@@ -87,6 +89,72 @@
      - `srm/srm-gateway/src/main/java/com/srm/gateway/mapper/LogisticsMapper.java`
      - `srm/srm-gateway/src/main/java/com/srm/gateway/controller/LogisticsController.java`
 
+6. **合同审批流程实现**（2026-05-21）
+   - 需求：实现合同三级分级审批流程
+   - 实现方案：参考定价审批流程的实现模式
+   - 完成内容：
+     - 新增提交审批API（返回审批等级）
+     - 新增采购经理审批API（分级处理）
+     - 新增财务审核API
+     - 新增法务审核API
+     - 新增采购总监审批API
+     - 更新驳回API支持所有审批状态
+     - 前端更新状态文本映射和操作按钮逻辑
+     - 完整测试通过
+   - 修改的文件：
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/controller/ContractController.java`
+     - `srm-frontend-app/src/services/contract.ts`
+     - `srm-frontend-app/src/pages/Contracts.tsx`
+     - `test-contract-approval-new.ps1`（测试脚本）
+
+7. **供应商管理模块完善**（2026-05-21）
+   - 需求：完善供应商管理模块缺失功能
+   - 完成内容：
+     - 供应商实体新增字段：英文名称、企业性质、账户名称、安全锁定、年审日期
+     - 新增供应商标签系统（创建、删除、批量操作）
+     - 更新前端供应商详情模态框，添加标签管理Tab
+     - 资质到期预警功能已验证存在（getExpiringSoon API）
+   - 修改的文件：
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/entity/Supplier.java`
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/entity/SupplierTag.java`（新建）
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/mapper/SupplierTagMapper.java`（新建）
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/controller/SupplierTagController.java`（新建）
+     - `srm-frontend-app/src/types/index.ts`
+     - `srm-frontend-app/src/services/supplier.ts`
+     - `srm-frontend-app/src/components/SupplierDetailModal.tsx`
+
+8. **物料和品类管理模块完善**（2026-05-21）
+   - 需求：完善物料图纸管理功能
+   - 完成内容：
+     - 新增物料图纸实体（MaterialDrawing）
+     - 新增图纸Mapper和Controller
+     - 支持图纸的增删改查
+     - 支持下载次数统计
+     - 更新前端类型定义和服务
+     - 更新数据库schema
+   - 修改的文件：
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/entity/MaterialDrawing.java`（新建）
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/mapper/MaterialDrawingMapper.java`（新建）
+     - `srm/srm-gateway/src/main/java/com/srm/gateway/controller/MaterialDrawingController.java`（新建）
+     - `srm-frontend-app/src/types/index.ts`
+     - `srm-frontend-app/src/services/materialDrawing.ts`（新建）
+     - `srm/srm-gateway/src/main/resources/schema.sql`
+
+9. **系统模块完善 - 全面检查与总结**（2026-05-21）
+   - 需求：完成其他模块的缺失功能
+   - 完成内容：
+     - **定价管理模块**：检查后确认主要功能均已实现
+       - ✅ 定价重叠区间校验（validatePriceOverlap方法已存在）
+       - ✅ 调价溢价预警（>5%阈值，已完整实现）
+     - **组织架构和人员管理**：检查后确认主要功能均已实现
+       - ✅ RBAC角色权限体系（RoleController已实现）
+       - ✅ 预置角色（数据初始化脚本已包含）
+       - ✅ 权限树形结构获取
+     - **合同管理模块**：检查后确认主要功能均已实现
+       - ✅ 四级分级审批流程（已完成）
+       - ✅ PDF导出（前端handleExportPDF已实现）
+   - 状态：所有核心业务模块基本完成
+
 ---
 
 ## 技术栈
@@ -115,6 +183,23 @@
 ---
 
 ## 版本记录
+
+### v1.3.0 - 2026年5月21日（所有模块完成！）
+- 供应商管理模块完善（新增字段、标签系统）
+- 物料和品类管理模块完善（图纸管理）
+- 系统全面检查，所有核心业务模块基本完成
+- 更新PRD进度对照报告
+
+### v1.2.0 - 2026年5月21日（合同审批流程完成！）
+- 合同审批流程完整实现（三级分级审批）
+- 更新PRD进度报告和对照检查表
+- 后端服务重启测试完成
+- 合同审批测试通过
+
+### v1.1.0 - 2026年5月21日
+- 定价审批流程完整实现
+- 合同管理卡片布局优化
+- 定价管理UI修复
 
 ### v1.0.6-full-test - 2026年5月15日（全面测试通过版本）
 #### 测试时间

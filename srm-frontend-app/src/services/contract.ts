@@ -30,6 +30,18 @@ export const contractApi = {
     return api.post(`/api/contracts/${id}/approve`);
   },
 
+  financeApprove: (id: number): Promise<ApiResponse<void>> => {
+    return api.post(`/api/contracts/${id}/finance-approve`);
+  },
+
+  legalApprove: (id: number): Promise<ApiResponse<void>> => {
+    return api.post(`/api/contracts/${id}/legal-approve`);
+  },
+
+  directorApprove: (id: number): Promise<ApiResponse<void>> => {
+    return api.post(`/api/contracts/${id}/director-approve`);
+  },
+
   reject: (id: number, reason?: string): Promise<ApiResponse<void>> => {
     return api.post(`/api/contracts/${id}/reject`, { reason });
   },

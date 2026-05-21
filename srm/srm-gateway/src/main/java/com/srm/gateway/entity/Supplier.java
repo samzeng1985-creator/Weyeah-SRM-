@@ -26,6 +26,11 @@ public class Supplier {
     private String businessLicense;
     private String bankName;
     private String bankAccount;
+    private String bankAccountName;
+    private String englishName;
+    private String enterpriseNature;
+    private Integer securityLocked;
+    private LocalDateTime annualReviewDate;
     private String mainProducts;
     private String qualityCertification;
     private String isoCertificate;
@@ -172,6 +177,46 @@ public class Supplier {
 
     public void setBankAccount(String bankAccount) {
         this.bankAccount = bankAccount;
+    }
+
+    public String getBankAccountName() {
+        return bankAccountName;
+    }
+
+    public void setBankAccountName(String bankAccountName) {
+        this.bankAccountName = bankAccountName;
+    }
+
+    public String getEnglishName() {
+        return englishName;
+    }
+
+    public void setEnglishName(String englishName) {
+        this.englishName = englishName;
+    }
+
+    public String getEnterpriseNature() {
+        return enterpriseNature;
+    }
+
+    public void setEnterpriseNature(String enterpriseNature) {
+        this.enterpriseNature = enterpriseNature;
+    }
+
+    public Integer getSecurityLocked() {
+        return securityLocked;
+    }
+
+    public void setSecurityLocked(Integer securityLocked) {
+        this.securityLocked = securityLocked;
+    }
+
+    public LocalDateTime getAnnualReviewDate() {
+        return annualReviewDate;
+    }
+
+    public void setAnnualReviewDate(LocalDateTime annualReviewDate) {
+        this.annualReviewDate = annualReviewDate;
     }
 
     public String getMainProducts() {

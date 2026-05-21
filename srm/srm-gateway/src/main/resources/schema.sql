@@ -21,9 +21,12 @@ CREATE TABLE IF NOT EXISTS supplier (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(200) NOT NULL,
+    english_name VARCHAR(200),
     short_name VARCHAR(100),
     type VARCHAR(50) DEFAULT 'MANUFACTURER',
+    enterprise_nature VARCHAR(50),
     status VARCHAR(50) DEFAULT 'DRAFT',
+    security_locked INT DEFAULT 0,
     country VARCHAR(100) DEFAULT '中国',
     city VARCHAR(100),
     address VARCHAR(500),
@@ -34,10 +37,43 @@ CREATE TABLE IF NOT EXISTS supplier (
     business_license VARCHAR(100),
     bank_name VARCHAR(200),
     bank_account VARCHAR(100),
+    bank_account_name VARCHAR(200),
     main_products TEXT,
     quality_certification VARCHAR(200),
     iso_certificate VARCHAR(200),
+    annual_review_date DATE,
     remark TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    del_flag INT DEFAULT 0
+);
+
+-- 供应商标签表
+CREATE TABLE IF NOT EXISTS supplier_tag (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    supplier_id BIGINT NOT NULL,
+    tag_name VARCHAR(50) NOT NULL,
+    tag_color VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    del_flag INT DEFAULT 0
+);
+
+-- 物料图纸表
+CREATE TABLE IF NOT EXISTS material_drawing (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    material_id BIGINT NOT NULL,
+    drawing_no VARCHAR(100) NOT NULL,
+    drawing_name VARCHAR(200),
+    version VARCHAR(20) DEFAULT '1.0',
+    file_url VARCHAR(500),
+    file_type VARCHAR(50),
+    file_size BIGINT,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    download_count INT DEFAULT 0,
+    remark VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by BIGINT,
@@ -350,6 +386,27 @@ CREATE TABLE IF NOT EXISTS category (
     description VARCHAR(500),
     is_leaf BOOLEAN DEFAULT TRUE,
     status VARCHAR(20) DEFAULT 'ACTIVE',
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
+    del_flag INT DEFAULT 0
+);
+
+-- 合同模板表
+CREATE TABLE IF NOT EXISTS contract_template (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(200) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    html_content TEXT NOT NULL,
+    variable_schema TEXT,
+    description VARCHAR(500),
+    is_default BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    version VARCHAR(20) DEFAULT '1.0',
+    language VARCHAR(20) DEFAULT 'zh-CN',
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

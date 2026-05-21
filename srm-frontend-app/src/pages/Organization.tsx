@@ -11,10 +11,13 @@ export default function Organization({ onLogout }: OrganizationProps) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [showDeptModal, setShowDeptModal] = useState(false);
   const [showEmpModal, setShowEmpModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
@@ -60,6 +63,7 @@ export default function Organization({ onLogout }: OrganizationProps) {
     loadDepartments();
     loadEmployees();
     loadRoles();
+    loadPermissions();
   }, []);
 
   const loadDepartments = async () => {
@@ -101,6 +105,17 @@ export default function Organization({ onLogout }: OrganizationProps) {
       }
     } catch (error) {
       console.error('加载角色失败:', error);
+    }
+  };
+
+  const loadPermissions = async () => {
+    try {
+      const response = await organizationApi.getPermissionTree();
+      if (response.success && response.data) {
+        setPermissions(response.data);
+      }
+    } catch (error) {
+      console.error('加载权限失败:', error);
     }
   };
 
@@ -349,6 +364,79 @@ export default function Organization({ onLogout }: OrganizationProps) {
     } catch (error) {
       showNotification('删除失败', 'error');
     }
+  };
+
+  const handleOpenPermissionModal = (role: Role) => {
+    setSelectedRole(role);
+    setShowPermissionModal(true);
+  };
+
+  const handleSavePermissions = async () => {
+    if (!selectedRole?.id) return;
+    
+    const checkedPermissions: number[] = [];
+    const collectPermissions = (items: Permission[]) => {
+      items.forEach(item => {
+        if (item.checked) {
+          checkedPermissions.push(item.id!);
+        }
+        if (item.children) {
+          collectPermissions(item.children);
+        }
+      });
+    };
+    collectPermissions(permissions);
+
+    setIsLoading(true);
+    try {
+      const response = await organizationApi.updateRole(selectedRole.id, {
+        permissionIds: checkedPermissions
+      });
+      if (response.success) {
+        showNotification('权限设置成功', 'success');
+        setShowPermissionModal(false);
+        loadRoles();
+      } else {
+        showNotification(response.message || '设置失败', 'error');
+      }
+    } catch (error) {
+      showNotification('设置失败', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const togglePermission = (permission: Permission) => {
+    const updatePermissions = (items: Permission[]): Permission[] => {
+      return items.map(item => {
+        if (item.id === permission.id) {
+          const newChecked = !item.checked;
+          return { ...item, checked: newChecked };
+        }
+        if (item.children) {
+          return { ...item, children: updatePermissions(item.children) };
+        }
+        return item;
+      });
+    };
+    setPermissions(updatePermissions(permissions));
+  };
+
+  const toggleModulePermissions = (modulePermissions: Permission[]) => {
+    const allChecked = modulePermissions.every(p => p.checked);
+    const updatePermissions = (items: Permission[]): Permission[] => {
+      return items.map(item => {
+        const isInModule = modulePermissions.some(m => m.id === item.id);
+        if (isInModule) {
+          return { ...item, checked: !allChecked };
+        }
+        if (item.children) {
+          return { ...item, children: updatePermissions(item.children) };
+        }
+        return item;
+      });
+    };
+    setPermissions(updatePermissions(permissions));
   };
 
   const getStatusText = (status: string) => {
@@ -747,13 +835,22 @@ export default function Organization({ onLogout }: OrganizationProps) {
                             <button 
                               onClick={() => handleEditRole(role)}
                               className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
+                              title="编辑"
                             >
                               <i className="fas fa-edit"></i>
+                            </button>
+                            <button 
+                              onClick={() => handleOpenPermissionModal(role)}
+                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-blue-600"
+                              title="权限设置"
+                            >
+                              <i className="fas fa-key"></i>
                             </button>
                             {role.isSystem !== 1 && (
                               <button 
                                 onClick={() => role.id && handleDeleteRole(role.id)}
                                 className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600"
+                                title="删除"
                               >
                                 <i className="fas fa-trash"></i>
                               </button>
@@ -1041,6 +1138,108 @@ export default function Organization({ onLogout }: OrganizationProps) {
                 >
                   {isLoading && <i className="fas fa-spinner fa-spin mr-2"></i>}
                   保存
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPermissionModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl max-h-[85vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  <i className="fas fa-key mr-2"></i>
+                  角色权限设置 - {selectedRole?.name}
+                </h2>
+                <button onClick={() => setShowPermissionModal(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="space-y-4">
+                  {permissions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <i className="fas fa-key text-4xl mb-3"></i>
+                      <p>暂无权限数据</p>
+                    </div>
+                  ) : (
+                    permissions.map((module) => {
+                      const modulePermissions: Permission[] = [];
+                      const collectModulePerms = (items: Permission[], parent?: Permission) => {
+                        items.forEach(item => {
+                          if (parent || item.type === 'MENU') {
+                            modulePermissions.push(item);
+                          }
+                          if (item.children) {
+                            collectModulePerms(item.children, item);
+                          }
+                        });
+                      };
+                      collectModulePerms([module]);
+
+                      return (
+                        <div key={module.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                          <div className="flex items-center justify-between p-4 bg-gray-100">
+                            <div className="flex items-center gap-3">
+                              <i className={`fas ${module.icon || 'fa-folder'} text-weyeah-blue`}></i>
+                              <span className="font-semibold text-gray-900">{module.name}</span>
+                            </div>
+                            <button
+                              onClick={() => toggleModulePermissions(modulePermissions)}
+                              className="text-sm text-weyeah-blue hover:text-weyeah-blue-700"
+                            >
+                              {modulePermissions.every(p => p.checked) ? '取消全选' : '全选'}
+                            </button>
+                          </div>
+                          <div className="p-4 space-y-2">
+                            {module.children?.map((menu) => (
+                              <div key={menu.id} className="ml-4">
+                                <div className="flex items-center gap-3 py-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={menu.checked}
+                                    onChange={() => togglePermission(menu)}
+                                    className="w-4 h-4 text-weyeah-blue rounded"
+                                  />
+                                  <i className={`fas ${menu.icon || 'fa-file'} text-gray-400`}></i>
+                                  <span className="text-gray-700">{menu.name}</span>
+                                </div>
+                                {menu.children?.map((action) => (
+                                  <div key={action.id} className="ml-8 flex items-center gap-3 py-1.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={action.checked}
+                                      onChange={() => togglePermission(action)}
+                                      className="w-4 h-4 text-weyeah-blue rounded"
+                                    />
+                                    <i className="fas fa-circle text-xs text-gray-300"></i>
+                                    <span className="text-sm text-gray-600">{action.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowPermissionModal(false)}
+                  className="px-6 py-3 border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSavePermissions}
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoading && <i className="fas fa-spinner fa-spin"></i>}
+                  保存权限设置
                 </button>
               </div>
             </div>

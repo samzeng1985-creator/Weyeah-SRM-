@@ -9,6 +9,7 @@ import Organization from './pages/Organization';
 import Settings from './pages/Settings';
 import Categories from './pages/Categories';
 import LogisticsPage from './pages/Logistics';
+import ContractTemplates from './pages/ContractTemplates';
 import { useState, useEffect } from 'react';
 
 function App() {
@@ -66,6 +67,7 @@ function AppRoutes({ onLogout }: { onLogout: () => void }) {
       <Route path="/materials" element={<Materials onLogout={onLogout} />} />
       <Route path="/categories" element={<Categories onLogout={onLogout} />} />
       <Route path="/contracts" element={<Contracts onLogout={onLogout} />} />
+      <Route path="/contract-templates" element={<ContractTemplates onLogout={onLogout} />} />
       <Route path="/pricing" element={<Pricing onLogout={onLogout} />} />
       <Route path="/logistics" element={<LogisticsPage onLogout={onLogout} />} />
       <Route path="/organization" element={<Organization onLogout={onLogout} />} />

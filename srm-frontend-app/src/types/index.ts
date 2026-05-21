@@ -2,9 +2,12 @@ export interface Supplier {
   id?: number;
   code: string;
   name: string;
+  englishName?: string;
   shortName?: string;
   type: string;
+  enterpriseNature?: string;
   status: string;
+  securityLocked?: number;
   country: string;
   city?: string;
   address?: string;
@@ -15,6 +18,7 @@ export interface Supplier {
   businessLicense?: string;
   bankName?: string;
   bankAccount?: string;
+  bankAccountName?: string;
   annualCapacity?: number;
   mainProducts?: string;
   qualityCertification?: string;
@@ -34,8 +38,11 @@ export interface Supplier {
 export interface SupplierCreate {
   code: string;
   name: string;
+  englishName?: string;
   shortName?: string;
   type: string;
+  enterpriseNature?: string;
+  securityLocked?: number;
   country?: string;
   city?: string;
   address?: string;
@@ -46,12 +53,22 @@ export interface SupplierCreate {
   businessLicense?: string;
   bankName?: string;
   bankAccount?: string;
+  bankAccountName?: string;
   annualCapacity?: number;
   mainProducts?: string;
   qualityCertification?: string;
   isoCertificate?: string;
   registeredDate?: string;
+  annualReviewDate?: string;
   remark?: string;
+}
+
+export interface SupplierTag {
+  id?: number;
+  supplierId: number;
+  tagName: string;
+  tagColor?: string;
+  createdAt?: string;
 }
 
 export interface Material {
@@ -93,6 +110,22 @@ export interface MaterialSupplier {
   leadTime?: number;
   moq?: number;
   status?: string;
+  remark?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MaterialDrawing {
+  id?: number;
+  materialId: number;
+  drawingNo: string;
+  drawingName?: string;
+  version?: string;
+  fileUrl?: string;
+  fileType?: string;
+  fileSize?: number;
+  status?: string;
+  downloadCount?: number;
   remark?: string;
   createdAt?: string;
   updatedAt?: string;

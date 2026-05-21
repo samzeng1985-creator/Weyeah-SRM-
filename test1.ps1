@@ -1,0 +1,2 @@
+$body = @{code="PRC-L1-001";supplierId=1;materialId=1;price=5000;currency="CNY";unit="件";minOrderQty=1;effectiveDate="2026-05-21";status="DRAFT";remark="LEVEL1"}
+Invoke-RestMethod -Uri "http://localhost:8080/api/pricing" -Method Post -Body ($body | ConvertTo-Json) -ContentType "application/json" | ConvertTo-Json

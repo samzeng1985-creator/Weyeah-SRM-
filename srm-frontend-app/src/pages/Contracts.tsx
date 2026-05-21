@@ -127,7 +127,10 @@ export default function ContractsPage({ onLogout }: ContractsPageProps) {
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
       DRAFT: '草稿',
-      PENDING: '审批中',
+      PENDING: '待采购审批',
+      FINANCE_PENDING: '待财务审核',
+      LEGAL_PENDING: '待法务审核',
+      DIRECTOR_PENDING: '待总监审批',
       APPROVED: '已批准',
       REJECTED: '已拒绝',
       SIGNED: '已签署',
@@ -144,13 +147,16 @@ export default function ContractsPage({ onLogout }: ContractsPageProps) {
     const map: Record<string, string> = {
       DRAFT: 'bg-gray-100 text-gray-700',
       PENDING: 'bg-yellow-100 text-yellow-700',
+      FINANCE_PENDING: 'bg-orange-100 text-orange-700',
+      LEGAL_PENDING: 'bg-pink-100 text-pink-700',
+      DIRECTOR_PENDING: 'bg-indigo-100 text-indigo-700',
       APPROVED: 'bg-blue-100 text-blue-700',
       REJECTED: 'bg-red-100 text-red-700',
       SIGNED: 'bg-purple-100 text-purple-700',
       ACTIVE: 'bg-green-100 text-green-700',
-      EXECUTING: 'bg-indigo-100 text-indigo-700',
-      COMPLETED: 'bg-teal-100 text-teal-700',
-      EXPIRED: 'bg-orange-100 text-orange-700',
+      EXECUTING: 'bg-teal-100 text-teal-700',
+      COMPLETED: 'bg-cyan-100 text-cyan-700',
+      EXPIRED: 'bg-gray-100 text-gray-700',
       TERMINATED: 'bg-red-100 text-red-700',
     };
     return map[status] || 'bg-gray-100 text-gray-700';
@@ -295,6 +301,15 @@ export default function ContractsPage({ onLogout }: ContractsPageProps) {
           break;
         case 'approve':
           response = await contractApi.approve(id);
+          break;
+        case 'financeApprove':
+          response = await contractApi.financeApprove(id);
+          break;
+        case 'legalApprove':
+          response = await contractApi.legalApprove(id);
+          break;
+        case 'directorApprove':
+          response = await contractApi.directorApprove(id);
           break;
         case 'reject':
           response = await contractApi.reject(id);
@@ -559,8 +574,20 @@ export default function ContractsPage({ onLogout }: ContractsPageProps) {
     const actions: Record<string, { label: string; action: string; class: string }[]> = {
       DRAFT: [{ label: '提交审批', action: 'submit', class: 'bg-blue-500 hover:bg-blue-600' }],
       PENDING: [
-        { label: '审批通过', action: 'approve', class: 'bg-green-500 hover:bg-green-600' },
-        { label: '审批拒绝', action: 'reject', class: 'bg-red-500 hover:bg-red-600' },
+        { label: '采购审批', action: 'approve', class: 'bg-green-500 hover:bg-green-600' },
+        { label: '驳回', action: 'reject', class: 'bg-red-500 hover:bg-red-600' },
+      ],
+      FINANCE_PENDING: [
+        { label: '财务审核', action: 'financeApprove', class: 'bg-green-500 hover:bg-green-600' },
+        { label: '驳回', action: 'reject', class: 'bg-red-500 hover:bg-red-600' },
+      ],
+      LEGAL_PENDING: [
+        { label: '法务审核', action: 'legalApprove', class: 'bg-green-500 hover:bg-green-600' },
+        { label: '驳回', action: 'reject', class: 'bg-red-500 hover:bg-red-600' },
+      ],
+      DIRECTOR_PENDING: [
+        { label: '总监审批', action: 'directorApprove', class: 'bg-green-500 hover:bg-green-600' },
+        { label: '驳回', action: 'reject', class: 'bg-red-500 hover:bg-red-600' },
       ],
       APPROVED: [{ label: '签署完成', action: 'sign', class: 'bg-purple-500 hover:bg-purple-600' }],
       SIGNED: [{ label: '合同生效', action: 'activate', class: 'bg-teal-500 hover:bg-teal-600' }],

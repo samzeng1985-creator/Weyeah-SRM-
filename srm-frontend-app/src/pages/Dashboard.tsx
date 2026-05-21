@@ -31,6 +31,12 @@ interface PendingItem {
   createdAt: string;
 }
 
+interface ChartData {
+  name: string;
+  value: number;
+  color: string;
+}
+
 export default function Dashboard({ onLogout }: DashboardProps) {
   const [stats, setStats] = useState<Stats>({
     supplierTotal: 0,
@@ -154,6 +160,96 @@ export default function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
+  const PieChart = ({ data, title }: { data: ChartData[], title: string }) => {
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    let currentAngle = 0;
+    
+    const segments = data.map((item, index) => {
+      const percentage = total > 0 ? (item.value / total) * 100 : 0;
+      const angle = (percentage / 100) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
+      currentAngle = endAngle;
+      
+      const startRad = (startAngle - 90) * (Math.PI / 180);
+      const endRad = (endAngle - 90) * (Math.PI / 180);
+      
+      const x1 = 50 + 40 * Math.cos(startRad);
+      const y1 = 50 + 40 * Math.sin(startRad);
+      const x2 = 50 + 40 * Math.cos(endRad);
+      const y2 = 50 + 40 * Math.sin(endRad);
+      
+      const largeArcFlag = angle > 180 ? 1 : 0;
+      
+      if (percentage === 100) {
+        return <circle key={index} cx="50" cy="50" r="40" fill={item.color} />;
+      }
+      
+      return (
+        <path
+          key={index}
+          d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+          fill={item.color}
+        />
+      );
+    });
+
+    return (
+      <div className="flex flex-col items-center">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">{title}</h3>
+        <svg viewBox="0 0 100 100" className="w-32 h-32">
+          {segments}
+        </svg>
+        <div className="flex flex-wrap justify-center gap-2 mt-3">
+          {data.map((item, index) => (
+            <div key={index} className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
+              <span className="text-xs text-gray-600">{item.name}</span>
+              <span className="text-xs font-medium text-gray-900">({item.value})</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const BarChart = ({ data, title, yLabel }: { data: ChartData[], title: string, yLabel: string }) => {
+    const maxValue = Math.max(...data.map(d => d.value), 1);
+    
+    return (
+      <div className="flex flex-col">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">{title}</h3>
+        <div className="flex items-end justify-around h-40 gap-2">
+          {data.map((item, index) => (
+            <div key={index} className="flex flex-col items-center flex-1">
+              <div className="w-full flex justify-center items-end h-32">
+                <div
+                  className="w-10 rounded-t-lg transition-all hover:opacity-80"
+                  style={{
+                    height: `${(item.value / maxValue) * 100}%`,
+                    backgroundColor: item.color,
+                    minHeight: '4px',
+                  }}
+                />
+              </div>
+              <span className="text-xs text-gray-600 mt-2">{item.name}</span>
+              <span className="text-xs font-medium text-gray-900">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const mockMonthlyData: ChartData[] = [
+    { name: '1月', value: 12, color: '#3B82F6' },
+    { name: '2月', value: 19, color: '#3B82F6' },
+    { name: '3月', value: 15, color: '#3B82F6' },
+    { name: '4月', value: 25, color: '#3B82F6' },
+    { name: '5月', value: 22, color: '#3B82F6' },
+    { name: '6月', value: 30, color: '#3B82F6' },
+  ];
+
   return (
     <Layout onLogout={onLogout}>
       <div className="animate-fadeIn">
@@ -231,6 +327,29 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                     <i className="fas fa-tags text-xl text-purple-600"></i>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    <i className="fas fa-chart-line text-blue-500 mr-2"></i>
+                    月度合同趋势
+                  </h2>
+                </div>
+                <BarChart data={mockMonthlyData} title="" yLabel="合同数" />
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <PieChart
+                  title="供应商状态分布"
+                  data={[
+                    { name: '合格', value: stats.supplierQualified, color: '#10B981' },
+                    { name: '待审', value: stats.supplierPending, color: '#F59E0B' },
+                    { name: '其他', value: stats.supplierTotal - stats.supplierQualified - stats.supplierPending, color: '#9CA3AF' },
+                  ].filter(d => d.value > 0)}
+                />
               </div>
             </div>
 

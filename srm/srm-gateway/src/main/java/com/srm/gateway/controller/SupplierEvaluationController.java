@@ -19,7 +19,6 @@ import java.util.List;
 @RequestMapping("/api/supplier-evaluations")
 @RequiredArgsConstructor
 @Tag(name = "供应商评估管理")
-@CrossOrigin(origins = "*")
 public class SupplierEvaluationController {
     
     @Autowired

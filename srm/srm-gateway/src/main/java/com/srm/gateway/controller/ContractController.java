@@ -38,6 +38,10 @@ public class ContractController {
     private final ContractItemMapper contractItemMapper;
     private final SupplierMapper supplierMapper;
     private final MaterialMapper materialMapper;
+    
+    private static final BigDecimal AMOUNT_LEVEL1 = new BigDecimal("50000");
+    private static final BigDecimal AMOUNT_LEVEL2 = new BigDecimal("200000");
+    private static final BigDecimal AMOUNT_LEVEL3 = new BigDecimal("1000000");
 
     public ContractController(ContractMapper contractMapper,
                              ContractItemMapper contractItemMapper,
@@ -496,7 +500,7 @@ public class ContractController {
 
     @Operation(summary = "提交审批")
     @PostMapping("/{id}/submit")
-    public Result<Void> submit(@PathVariable("id") Long id) {
+    public Result<Map<String, Object>> submit(@PathVariable("id") Long id) {
         log.info("提交审批, id={}", id);
         
         Contract existing = contractMapper.selectById(id);
@@ -514,21 +518,138 @@ public class ContractController {
         wrapper.set("updated_at", LocalDateTime.now());
         contractMapper.update(null, wrapper);
         
-        return Result.success("提交成功", null);
+        Map<String, Object> result = new HashMap<>();
+        result.put("approvalLevel", getApprovalLevel(existing));
+        result.put("message", "已提交审批");
+        
+        return Result.success("提交成功", result);
     }
 
-    @Operation(summary = "审批通过")
+    @Operation(summary = "采购经理审批")
     @PostMapping("/{id}/approve")
-    public Result<Void> approve(@PathVariable("id") Long id) {
-        log.info("审批通过, id={}", id);
+    public Result<Map<String, Object>> approve(@PathVariable("id") Long id) {
+        log.info("采购经理审批合同, id={}", id);
         
         Contract existing = contractMapper.selectById(id);
         if (existing == null || existing.getDelFlag() == 2) {
             return Result.error(404, "合同不存在");
         }
         
-        if (!"PENDING".equals(existing.getStatus())) {
-            return Result.error(400, "只有审批中的合同可以审批");
+        if (!"PENDING".equals(existing.getStatus()) && !"FINANCE_PENDING".equals(existing.getStatus()) && !"LEGAL_PENDING".equals(existing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        String approvalLevel = getApprovalLevel(existing);
+        
+        if ("LEVEL1".equals(approvalLevel)) {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "APPROVED");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("审批通过，合同已批准", null);
+        } else if ("LEVEL2".equals(approvalLevel)) {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "FINANCE_PENDING");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("已提交财务审核", null);
+        } else if ("LEVEL3".equals(approvalLevel)) {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "FINANCE_PENDING");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("已提交财务审核", null);
+        } else {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "FINANCE_PENDING");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("已提交财务审核", null);
+        }
+    }
+    
+    @Operation(summary = "财务审核")
+    @PostMapping("/{id}/finance-approve")
+    public Result<Map<String, Object>> financeApprove(@PathVariable("id") Long id) {
+        log.info("财务审核合同, id={}", id);
+        
+        Contract existing = contractMapper.selectById(id);
+        if (existing == null || existing.getDelFlag() == 2) {
+            return Result.error(404, "合同不存在");
+        }
+        
+        if (!"FINANCE_PENDING".equals(existing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        String approvalLevel = getApprovalLevel(existing);
+        
+        if ("LEVEL2".equals(approvalLevel)) {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "APPROVED");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("财务审核通过，合同已批准", null);
+        } else {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "LEGAL_PENDING");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("已提交法务审核", null);
+        }
+    }
+    
+    @Operation(summary = "法务审核")
+    @PostMapping("/{id}/legal-approve")
+    public Result<Map<String, Object>> legalApprove(@PathVariable("id") Long id) {
+        log.info("法务审核合同, id={}", id);
+        
+        Contract existing = contractMapper.selectById(id);
+        if (existing == null || existing.getDelFlag() == 2) {
+            return Result.error(404, "合同不存在");
+        }
+        
+        if (!"LEGAL_PENDING".equals(existing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        String approvalLevel = getApprovalLevel(existing);
+        
+        if ("LEVEL3".equals(approvalLevel)) {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "DIRECTOR_PENDING");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("已提交采购总监审批", null);
+        } else {
+            UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
+            wrapper.eq("id", id);
+            wrapper.set("status", "APPROVED");
+            wrapper.set("updated_at", LocalDateTime.now());
+            contractMapper.update(null, wrapper);
+            return Result.success("法务审核通过，合同已批准", null);
+        }
+    }
+    
+    @Operation(summary = "采购总监审批")
+    @PostMapping("/{id}/director-approve")
+    public Result<Map<String, Object>> directorApprove(@PathVariable("id") Long id) {
+        log.info("采购总监审批合同, id={}", id);
+        
+        Contract existing = contractMapper.selectById(id);
+        if (existing == null || existing.getDelFlag() == 2) {
+            return Result.error(404, "合同不存在");
+        }
+        
+        if (!"DIRECTOR_PENDING".equals(existing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
         }
         
         UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
@@ -537,30 +658,50 @@ public class ContractController {
         wrapper.set("updated_at", LocalDateTime.now());
         contractMapper.update(null, wrapper);
         
-        return Result.success("审批通过", null);
+        return Result.success("审批通过，合同已批准", null);
     }
 
-    @Operation(summary = "审批拒绝")
+    @Operation(summary = "驳回审批")
     @PostMapping("/{id}/reject")
-    public Result<Void> reject(@PathVariable("id") Long id, @RequestBody Map<String, String> params) {
-        log.info("审批拒绝, id={}", id);
+    public Result<Map<String, Object>> reject(@PathVariable("id") Long id, @RequestBody(required = false) Map<String, String> params) {
+        log.info("驳回合同审批, id={}", id);
         
         Contract existing = contractMapper.selectById(id);
         if (existing == null || existing.getDelFlag() == 2) {
             return Result.error(404, "合同不存在");
         }
         
-        if (!"PENDING".equals(existing.getStatus())) {
-            return Result.error(400, "只有审批中的合同可以拒绝");
+        String currentStatus = existing.getStatus();
+        if (!"PENDING".equals(currentStatus) && !"FINANCE_PENDING".equals(currentStatus) && !"LEGAL_PENDING".equals(currentStatus) && !"DIRECTOR_PENDING".equals(currentStatus)) {
+            return Result.error(400, "当前状态不允许此操作");
         }
         
         UpdateWrapper<Contract> wrapper = new UpdateWrapper<>();
         wrapper.eq("id", id);
-        wrapper.set("status", "REJECTED");
+        wrapper.set("status", "DRAFT");
         wrapper.set("updated_at", LocalDateTime.now());
         contractMapper.update(null, wrapper);
         
-        return Result.success("审批拒绝", null);
+        String reason = params != null ? params.get("reason") : null;
+        Map<String, Object> result = new HashMap<>();
+        result.put("reason", reason);
+        
+        return Result.success("已驳回，状态已改为草稿", result);
+    }
+    
+    private String getApprovalLevel(Contract contract) {
+        BigDecimal amount = contract.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return "LEVEL1";
+        }
+        
+        if (amount.compareTo(AMOUNT_LEVEL1) <= 0) {
+            return "LEVEL1";
+        } else if (amount.compareTo(AMOUNT_LEVEL2) <= 0) {
+            return "LEVEL2";
+        } else {
+            return "LEVEL3";
+        }
     }
 
     @Operation(summary = "签署完成")

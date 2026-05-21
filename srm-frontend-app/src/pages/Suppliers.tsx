@@ -299,6 +299,54 @@ export default function Suppliers({ onLogout }: SuppliersProps) {
     }
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await supplierApi.importData(formData);
+      if (response.success) {
+        showNotification(`成功导入 ${response.data} 条供应商数据`, 'success');
+        loadSuppliers();
+      } else {
+        showNotification(response.message || '导入失败', 'error');
+      }
+    } catch (error) {
+      console.error('导入失败:', error);
+      showNotification('导入失败，请确保文件格式正确', 'error');
+    } finally {
+      setIsLoading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleExport = () => {
+    const headers = ['供应商编码', '供应商名称', '简称', '类型', '联系人', '联系电话', '状态', '创建时间'];
+    const rows = suppliers.map(supplier => [
+      supplier.code,
+      supplier.name,
+      supplier.shortName || '',
+      supplier.type === 'MANUFACTURER' ? '制造商' : supplier.type === 'TRADER' ? '贸易商' : supplier.type === 'AGENT' ? '代理商' : supplier.type,
+      supplier.contactPerson || '',
+      supplier.contactPhone || '',
+      getStatusText(supplier.status),
+      supplier.createdAt ? new Date(supplier.createdAt).toLocaleDateString() : ''
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `供应商数据_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
@@ -354,6 +402,29 @@ export default function Suppliers({ onLogout }: SuppliersProps) {
                 <option value="SUSPENDED">暂停</option>
                 <option value="BLACKLIST">黑名单</option>
               </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => document.getElementById('import-file')?.click()}
+                className="px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 flex items-center gap-2"
+              >
+                <i className="fas fa-upload"></i>
+                导入
+              </button>
+              <button
+                onClick={handleExport}
+                className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 flex items-center gap-2"
+              >
+                <i className="fas fa-download"></i>
+                导出
+              </button>
+              <input
+                id="import-file"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleImport}
+                className="hidden"
+              />
             </div>
           </div>
         </div>
