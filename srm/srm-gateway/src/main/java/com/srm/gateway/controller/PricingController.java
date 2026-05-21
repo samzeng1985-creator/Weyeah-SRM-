@@ -35,6 +35,8 @@ public class PricingController {
     
     private static final BigDecimal PRICE_INCREASE_THRESHOLD = new BigDecimal("5.00");
     private static final BigDecimal HUNDRED = new BigDecimal("100");
+    private static final BigDecimal AMOUNT_LEVEL1 = new BigDecimal("100000");
+    private static final BigDecimal AMOUNT_LEVEL2 = new BigDecimal("500000");
 
     public PricingController(PricingMapper pricingMapper, SupplierMapper supplierMapper, MaterialMapper materialMapper) {
         this.pricingMapper = pricingMapper;
@@ -311,6 +313,163 @@ public class PricingController {
         return Result.success("检查完成", result);
     }
     
+    @Operation(summary = "提交审批")
+    @PostMapping("/{id}/submit")
+    public Result<Map<String, Object>> submit(@PathVariable("id") Long id) {
+        log.info("提交定价审批, id={}", id);
+        
+        Pricing pricing = pricingMapper.selectById(id);
+        if (pricing == null) {
+            return Result.error(404, "定价记录不存在");
+        }
+        
+        if (!"DRAFT".equals(pricing.getStatus())) {
+            return Result.error(400, "只有草稿状态的定价才能提交审批");
+        }
+        
+        pricing.setStatus("PENDING");
+        pricing.setUpdatedAt(LocalDateTime.now());
+        pricingMapper.updateById(pricing);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("approvalLevel", getApprovalLevel(pricing));
+        result.put("message", "已提交审批");
+        
+        return Result.success("提交成功", result);
+    }
+    
+    @Operation(summary = "采购经理审批")
+    @PostMapping("/{id}/approve")
+    public Result<Map<String, Object>> approve(@PathVariable("id") Long id) {
+        log.info("采购经理审批定价, id={}", id);
+        
+        Pricing pricing = pricingMapper.selectById(id);
+        if (pricing == null) {
+            return Result.error(404, "定价记录不存在");
+        }
+        
+        if (!"PENDING".equals(pricing.getStatus()) && !"FINANCE_PENDING".equals(pricing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        String approvalLevel = getApprovalLevel(pricing);
+        
+        if ("LEVEL1".equals(approvalLevel)) {
+            pricing.setStatus("ACTIVE");
+            pricing.setUpdatedAt(LocalDateTime.now());
+            pricingMapper.updateById(pricing);
+            return Result.success("审批通过，定价已生效", null);
+        } else if ("LEVEL2".equals(approvalLevel)) {
+            pricing.setStatus("FINANCE_PENDING");
+            pricing.setUpdatedAt(LocalDateTime.now());
+            pricingMapper.updateById(pricing);
+            return Result.success("已提交财务审核", null);
+        } else {
+            pricing.setStatus("FINANCE_PENDING");
+            pricing.setUpdatedAt(LocalDateTime.now());
+            pricingMapper.updateById(pricing);
+            return Result.success("已提交财务审核", null);
+        }
+    }
+    
+    @Operation(summary = "财务审核")
+    @PostMapping("/{id}/finance-approve")
+    public Result<Map<String, Object>> financeApprove(@PathVariable("id") Long id) {
+        log.info("财务审核定价, id={}", id);
+        
+        Pricing pricing = pricingMapper.selectById(id);
+        if (pricing == null) {
+            return Result.error(404, "定价记录不存在");
+        }
+        
+        if (!"FINANCE_PENDING".equals(pricing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        String approvalLevel = getApprovalLevel(pricing);
+        
+        if ("LEVEL2".equals(approvalLevel)) {
+            pricing.setStatus("ACTIVE");
+            pricing.setUpdatedAt(LocalDateTime.now());
+            pricingMapper.updateById(pricing);
+            return Result.success("财务审核通过，定价已生效", null);
+        } else {
+            pricing.setStatus("DIRECTOR_PENDING");
+            pricing.setUpdatedAt(LocalDateTime.now());
+            pricingMapper.updateById(pricing);
+            return Result.success("已提交采购总监审批", null);
+        }
+    }
+    
+    @Operation(summary = "采购总监审批")
+    @PostMapping("/{id}/director-approve")
+    public Result<Map<String, Object>> directorApprove(@PathVariable("id") Long id) {
+        log.info("采购总监审批定价, id={}", id);
+        
+        Pricing pricing = pricingMapper.selectById(id);
+        if (pricing == null) {
+            return Result.error(404, "定价记录不存在");
+        }
+        
+        if (!"DIRECTOR_PENDING".equals(pricing.getStatus())) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        pricing.setStatus("ACTIVE");
+        pricing.setUpdatedAt(LocalDateTime.now());
+        pricingMapper.updateById(pricing);
+        
+        return Result.success("审批通过，定价已生效", null);
+    }
+    
+    @Operation(summary = "驳回审批")
+    @PostMapping("/{id}/reject")
+    public Result<Map<String, Object>> reject(@PathVariable("id") Long id, @RequestBody(required = false) Map<String, String> body) {
+        log.info("驳回定价审批, id={}", id);
+        
+        Pricing pricing = pricingMapper.selectById(id);
+        if (pricing == null) {
+            return Result.error(404, "定价记录不存在");
+        }
+        
+        String currentStatus = pricing.getStatus();
+        if (!"PENDING".equals(currentStatus) && !"FINANCE_PENDING".equals(currentStatus) && !"DIRECTOR_PENDING".equals(currentStatus)) {
+            return Result.error(400, "当前状态不允许此操作");
+        }
+        
+        pricing.setStatus("DRAFT");
+        pricing.setUpdatedAt(LocalDateTime.now());
+        pricingMapper.updateById(pricing);
+        
+        String reason = body != null ? body.get("reason") : null;
+        Map<String, Object> result = new HashMap<>();
+        result.put("reason", reason);
+        
+        return Result.success("已驳回，状态已改为草稿", result);
+    }
+    
+    @Operation(summary = "终止定价")
+    @PostMapping("/{id}/terminate")
+    public Result<Void> terminate(@PathVariable("id") Long id) {
+        log.info("终止定价, id={}", id);
+        
+        Pricing pricing = pricingMapper.selectById(id);
+        if (pricing == null) {
+            return Result.error(404, "定价记录不存在");
+        }
+        
+        if (!"ACTIVE".equals(pricing.getStatus())) {
+            return Result.error(400, "只有已生效的定价才能终止");
+        }
+        
+        pricing.setStatus("EXPIRED");
+        pricing.setExpiryDate(LocalDate.now());
+        pricing.setUpdatedAt(LocalDateTime.now());
+        pricingMapper.updateById(pricing);
+        
+        return Result.success("已终止定价", null);
+    }
+    
     @Operation(summary = "检查涨价幅度")
     @PostMapping("/check-price-increase")
     public Result<Map<String, Object>> checkPriceIncrease(@RequestBody Pricing pricing) {
@@ -449,6 +608,25 @@ public class PricingController {
 
     private String generateCode() {
         return "PRC" + System.currentTimeMillis();
+    }
+    
+    private String getApprovalLevel(Pricing pricing) {
+        BigDecimal price = pricing.getPrice();
+        BigDecimal minOrderQty = pricing.getMinOrderQty();
+        
+        if (price == null || minOrderQty == null) {
+            return "LEVEL1";
+        }
+        
+        BigDecimal amount = price.multiply(minOrderQty);
+        
+        if (amount.compareTo(AMOUNT_LEVEL1) <= 0) {
+            return "LEVEL1";
+        } else if (amount.compareTo(AMOUNT_LEVEL2) <= 0) {
+            return "LEVEL2";
+        } else {
+            return "LEVEL3";
+        }
     }
 
     public static class PageResult<T> {

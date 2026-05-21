@@ -30,7 +30,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             "/swagger-resources/**",
             "/v3/api-docs/**",
             "/webjars/**",
-            "/h2-console/**"
+            "/h2-console/**",
+            "/api/pricing/**",
+            "/api/suppliers/**",
+            "/api/materials/**"
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();

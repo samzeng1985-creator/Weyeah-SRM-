@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,7 +52,7 @@ public class Contract {
     @TableField("governing_law")
     private String governingLaw;
     
-    // 采购合同特有字段
+    // 采购合同/委托加工合同特有字段
     @TableField("purchase_order_no")
     private String purchaseOrderNo;
     
@@ -115,6 +116,7 @@ public class Contract {
     private Long updatedBy;
     
     @TableField("del_flag")
+    @TableLogic
     private Integer delFlag;
 
     public Long getId() {

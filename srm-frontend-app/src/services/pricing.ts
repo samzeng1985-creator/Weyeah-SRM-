@@ -80,4 +80,28 @@ export const pricingApi = {
   checkPriceIncrease: (data: Partial<PricingRecord>): Promise<ApiResponse<PriceCheckResult>> => {
     return api.post('/api/pricing/check-price-increase', data);
   },
+
+  submit: (id: number): Promise<ApiResponse<any>> => {
+    return api.post(`/api/pricing/${id}/submit`);
+  },
+
+  approve: (id: number): Promise<ApiResponse<any>> => {
+    return api.post(`/api/pricing/${id}/approve`);
+  },
+
+  financeApprove: (id: number): Promise<ApiResponse<any>> => {
+    return api.post(`/api/pricing/${id}/finance-approve`);
+  },
+
+  directorApprove: (id: number): Promise<ApiResponse<any>> => {
+    return api.post(`/api/pricing/${id}/director-approve`);
+  },
+
+  reject: (id: number, data: { reason: string }): Promise<ApiResponse<any>> => {
+    return api.post(`/api/pricing/${id}/reject`, data);
+  },
+
+  terminate: (id: number): Promise<ApiResponse<any>> => {
+    return api.post(`/api/pricing/${id}/terminate`);
+  },
 };

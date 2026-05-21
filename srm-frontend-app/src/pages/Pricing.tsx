@@ -82,7 +82,7 @@ export default function Pricing({ onLogout }: PricingProps) {
     effectiveDate: '',
     expiryDate: '',
     minOrderQty: 1,
-    status: 'PENDING',
+    status: 'DRAFT',
   });
 
   useEffect(() => {
@@ -164,7 +164,10 @@ export default function Pricing({ onLogout }: PricingProps) {
 
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
+      DRAFT: '草稿',
       PENDING: '待审批',
+      FINANCE_PENDING: '待财务审核',
+      DIRECTOR_PENDING: '待总监审批',
       ACTIVE: '已生效',
       EXPIRED: '已过期',
     };
@@ -173,7 +176,10 @@ export default function Pricing({ onLogout }: PricingProps) {
 
   const getStatusClass = (status: string) => {
     const map: Record<string, string> = {
+      DRAFT: 'bg-gray-100 text-gray-700',
       PENDING: 'bg-yellow-100 text-yellow-700',
+      FINANCE_PENDING: 'bg-blue-100 text-blue-700',
+      DIRECTOR_PENDING: 'bg-purple-100 text-purple-700',
       ACTIVE: 'bg-green-100 text-green-700',
       EXPIRED: 'bg-orange-100 text-orange-700',
     };
@@ -319,6 +325,101 @@ export default function Pricing({ onLogout }: PricingProps) {
     }
   };
 
+  const handleSubmit = async (id: number) => {
+    try {
+      const response = await pricingApi.submit(id);
+      if (response.success) {
+        showNotification('已提交审批', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '提交失败', 'error');
+      }
+    } catch (error) {
+      console.error('提交审批失败:', error);
+      showNotification('提交失败，请稍后重试', 'error');
+    }
+  };
+
+  const handleApprove = async (id: number) => {
+    try {
+      const response = await pricingApi.approve(id);
+      if (response.success) {
+        showNotification(response.message || '审批通过', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '审批失败', 'error');
+      }
+    } catch (error) {
+      console.error('审批失败:', error);
+      showNotification('审批失败，请稍后重试', 'error');
+    }
+  };
+
+  const handleFinanceApprove = async (id: number) => {
+    try {
+      const response = await pricingApi.financeApprove(id);
+      if (response.success) {
+        showNotification(response.message || '财务审核通过', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '审核失败', 'error');
+      }
+    } catch (error) {
+      console.error('财务审核失败:', error);
+      showNotification('审核失败，请稍后重试', 'error');
+    }
+  };
+
+  const handleDirectorApprove = async (id: number) => {
+    try {
+      const response = await pricingApi.directorApprove(id);
+      if (response.success) {
+        showNotification(response.message || '审批通过', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '审批失败', 'error');
+      }
+    } catch (error) {
+      console.error('总监审批失败:', error);
+      showNotification('审批失败，请稍后重试', 'error');
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    const reason = prompt('请输入驳回原因：');
+    if (reason === null) return;
+    
+    try {
+      const response = await pricingApi.reject(id, { reason });
+      if (response.success) {
+        showNotification('已驳回，状态已改为草稿', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '驳回失败', 'error');
+      }
+    } catch (error) {
+      console.error('驳回失败:', error);
+      showNotification('驳回失败，请稍后重试', 'error');
+    }
+  };
+
+  const handleTerminate = async (id: number) => {
+    if (!confirm('确定要终止该定价吗？')) return;
+    
+    try {
+      const response = await pricingApi.terminate(id);
+      if (response.success) {
+        showNotification('已终止定价', 'success');
+        loadPricingList();
+      } else {
+        showNotification(response.message || '终止失败', 'error');
+      }
+    } catch (error) {
+      console.error('终止定价失败:', error);
+      showNotification('终止失败，请稍后重试', 'error');
+    }
+  };
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
@@ -367,7 +468,10 @@ export default function Pricing({ onLogout }: PricingProps) {
               className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue focus:border-weyeah-blue"
             >
               <option value="">全部状态</option>
+              <option value="DRAFT">草稿</option>
               <option value="PENDING">待审批</option>
+              <option value="FINANCE_PENDING">待财务审核</option>
+              <option value="DIRECTOR_PENDING">待总监审批</option>
               <option value="ACTIVE">已生效</option>
               <option value="EXPIRED">已过期</option>
             </select>
@@ -427,28 +531,112 @@ export default function Pricing({ onLogout }: PricingProps) {
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <button 
                             onClick={() => handleView(item)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
                             title="查看详情"
                           >
                             <i className="fas fa-eye"></i>
                           </button>
-                          <button 
-                            onClick={() => handleEdit(item)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
-                            title="编辑"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button 
-                            onClick={() => item.id && handleDelete(item.id)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600"
-                            title="删除"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {(item.status === 'DRAFT' || item.status === 'PENDING') && (
+                            <button 
+                              onClick={() => handleEdit(item)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-600 hover:text-weyeah-blue"
+                              title="编辑"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {item.status === 'DRAFT' && (
+                            <button 
+                              onClick={() => item.id && handleSubmit(item.id)}
+                              className="h-8 px-2 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg flex items-center gap-1"
+                              title="提交审批"
+                            >
+                              <i className="fas fa-paper-plane"></i>
+                              提交
+                            </button>
+                          )}
+                          {item.status === 'PENDING' && (
+                            <>
+                              <button 
+                                onClick={() => item.id && handleApprove(item.id)}
+                                className="h-8 px-2 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg flex items-center gap-1"
+                                title="审批通过"
+                              >
+                                <i className="fas fa-check"></i>
+                                审批
+                              </button>
+                              <button 
+                                onClick={() => item.id && handleReject(item.id)}
+                                className="h-8 px-2 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg flex items-center gap-1"
+                                title="驳回"
+                              >
+                                <i className="fas fa-times"></i>
+                                驳回
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'FINANCE_PENDING' && (
+                            <>
+                              <button 
+                                onClick={() => item.id && handleFinanceApprove(item.id)}
+                                className="h-8 px-2 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg flex items-center gap-1"
+                                title="财务审核通过"
+                              >
+                                <i className="fas fa-check"></i>
+                                财务审核
+                              </button>
+                              <button 
+                                onClick={() => item.id && handleReject(item.id)}
+                                className="h-8 px-2 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg flex items-center gap-1"
+                                title="驳回"
+                              >
+                                <i className="fas fa-times"></i>
+                                驳回
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'DIRECTOR_PENDING' && (
+                            <>
+                              <button 
+                                onClick={() => item.id && handleDirectorApprove(item.id)}
+                                className="h-8 px-2 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded-lg flex items-center gap-1"
+                                title="总监审批通过"
+                              >
+                                <i className="fas fa-check"></i>
+                                总监审批
+                              </button>
+                              <button 
+                                onClick={() => item.id && handleReject(item.id)}
+                                className="h-8 px-2 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg flex items-center gap-1"
+                                title="驳回"
+                              >
+                                <i className="fas fa-times"></i>
+                                驳回
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'ACTIVE' && (
+                            <button 
+                              onClick={() => item.id && handleTerminate(item.id)}
+                              className="h-8 px-2 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-lg flex items-center gap-1"
+                              title="终止定价"
+                            >
+                              <i className="fas fa-stop-circle"></i>
+                              终止
+                            </button>
+                          )}
+                          {item.status === 'DRAFT' && (
+                            <button 
+                              onClick={() => item.id && handleDelete(item.id)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600"
+                              title="删除"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

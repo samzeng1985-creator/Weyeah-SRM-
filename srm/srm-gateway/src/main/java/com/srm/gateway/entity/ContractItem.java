@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @TableName("contract_item")
@@ -30,8 +32,21 @@ public class ContractItem {
     @TableField("material_model")
     private String materialModel;
     
+    // 物料快照字段（创建合同时复制）
     @TableField("snapshot_data")
     private String snapshotData;
+    
+    @TableField("snapshot_name")
+    private String snapshotName;
+    
+    @TableField("snapshot_model")
+    private String snapshotModel;
+    
+    @TableField("snapshot_drawing_version")
+    private String snapshotDrawingVersion;
+    
+    @TableField("snapshot_time")
+    private LocalDateTime snapshotTime;
     
     private BigDecimal quantity;
     
@@ -40,8 +55,20 @@ public class ContractItem {
     @TableField("unit_price")
     private BigDecimal unitPrice;
     
+    @TableField("tax_rate")
+    private BigDecimal taxRate;
+    
+    @TableField("price_with_tax")
+    private BigDecimal priceWithTax;
+    
     @TableField("total_price")
     private BigDecimal totalPrice;
+    
+    @TableField("total_price_with_tax")
+    private BigDecimal totalPriceWithTax;
+    
+    @TableField("delivery_date")
+    private LocalDate deliveryDate;
     
     @TableField("sort_order")
     private Integer sortOrder;
@@ -55,6 +82,7 @@ public class ContractItem {
     private LocalDateTime updatedAt;
     
     @TableField("del_flag")
+    @TableLogic
     private Integer delFlag;
 
     public Long getId() {
@@ -191,5 +219,69 @@ public class ContractItem {
 
     public void setDelFlag(Integer delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getSnapshotName() {
+        return snapshotName;
+    }
+
+    public void setSnapshotName(String snapshotName) {
+        this.snapshotName = snapshotName;
+    }
+
+    public String getSnapshotModel() {
+        return snapshotModel;
+    }
+
+    public void setSnapshotModel(String snapshotModel) {
+        this.snapshotModel = snapshotModel;
+    }
+
+    public String getSnapshotDrawingVersion() {
+        return snapshotDrawingVersion;
+    }
+
+    public void setSnapshotDrawingVersion(String snapshotDrawingVersion) {
+        this.snapshotDrawingVersion = snapshotDrawingVersion;
+    }
+
+    public LocalDateTime getSnapshotTime() {
+        return snapshotTime;
+    }
+
+    public void setSnapshotTime(LocalDateTime snapshotTime) {
+        this.snapshotTime = snapshotTime;
+    }
+
+    public BigDecimal getTaxRate() {
+        return taxRate;
+    }
+
+    public void setTaxRate(BigDecimal taxRate) {
+        this.taxRate = taxRate;
+    }
+
+    public BigDecimal getPriceWithTax() {
+        return priceWithTax;
+    }
+
+    public void setPriceWithTax(BigDecimal priceWithTax) {
+        this.priceWithTax = priceWithTax;
+    }
+
+    public BigDecimal getTotalPriceWithTax() {
+        return totalPriceWithTax;
+    }
+
+    public void setTotalPriceWithTax(BigDecimal totalPriceWithTax) {
+        this.totalPriceWithTax = totalPriceWithTax;
+    }
+
+    public LocalDate getDeliveryDate() {
+        return deliveryDate;
+    }
+
+    public void setDeliveryDate(LocalDate deliveryDate) {
+        this.deliveryDate = deliveryDate;
     }
 }

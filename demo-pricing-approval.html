@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定价审批流程演示</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        h1, h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .section { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #007bff; }
+        .status { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: bold; }
+        .status-draft { background: #e2e3e5; color: #383d41; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-finance_pending { background: #cce5ff; color: #004085; }
+        .status-director_pending { background: #e2d9ff; color: #6638b8; }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-expired { background: #f8d7da; color: #721c24; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; color: white; }
+        .btn-primary { background: #007bff; }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-danger { background: #dc3545; }
+        .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 4px; border: 1px solid #ddd; }
+        .pricing-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .pricing-table th, .pricing-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .pricing-table th { background: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>🏢 定价审批流程演示系统</h1>
+
+    <div class="section">
+        <h2>📋 系统功能说明</h2>
+        <p>本系统实现了完整的定价审批流程，包含三个审批等级：</p>
+        <ul>
+            <li><strong>LEVEL1（≤10万元）</strong>：采购经理审批 → 直接生效</li>
+            <li><strong>LEVEL2（10-50万元）</strong>：采购经理 → 财务审核 → 生效</li>
+            <li><strong>LEVEL3（>50万元）</strong>：采购经理 → 财务审核 → 总监审批 → 生效</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>➕ 创建新定价</h2>
+        <div class="info-box">
+            <label>价格（元）：</label>
+            <input type="number" id="price" value="5000" style="padding:8px;width:120px;">
+            <label>最小起订量：</label>
+            <input type="number" id="minOrder" value="1" style="padding:8px;width:80px;">
+            <button class="btn btn-primary" onclick="createPricing()">创建</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📊 定价列表</h2>
+        <button class="btn btn-primary" onclick="refreshPricingList()">刷新列表</button>
+        <div id="pricingList" style="margin-top:15px;">
+            <table class="pricing-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>编号</th>
+                        <th>供应商</th>
+                        <th>物料</th>
+                        <th>价格</th>
+                        <th>起订量</th>
+                        <th>总金额</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="pricingBody">
+                    <tr><td colspan="9" style="text-align:center">正在加载...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📜 操作日志</h2>
+        <div id="logArea" style="background:white;padding:15px;border:1px solid #ddd;min-height:100px;">
+            <div>等待操作...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/pricing';
+        
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logDiv = document.createElement('div');
+            logDiv.textContent = `[${time}] ${msg}`;
+            if (type === 'success') logDiv.style.color = '#155724';
+            if (type === 'error') logDiv.style.color = '#dc3545';
+            document.getElementById('logArea').prepend(logDiv);
+        }
+
+        async function fetchApi(url, method = 'GET', data = null) {
+            try {
+                const options = { method, headers: { 'Content-Type': 'application/json' };
+                if (data) options.body = JSON.stringify(data);
+                const response = await fetch(url, options);
+                return await response.json();
+            } catch (e) {
+                log(`请求失败: ${e}`, 'error');
+                return { success: false, message: String(e) };
+            }
+        }
+
+        async function createPricing() {
+            const price = parseFloat(document.getElementById('price').value);
+            const minOrder = parseInt(document.getElementById('minOrder').value);
+            const total = price * minOrder;
+            log(`正在创建定价: ${price}元 × ${minOrder}件, 总金额 ${total.toLocaleString()}元`);
+            
+            const result = await fetchApi(API_BASE, 'POST', {
+                code: `PRC-DEMO-${Date.now()}`,
+                supplierId: 1,
+                materialId: 1,
+                price: price,
+                currency: 'CNY',
+                unit: '件',
+                minOrderQty: minOrder,
+                effectiveDate: '2026-05-21',
+                status: 'DRAFT',
+                remark: `测试定价, 总金额: ${total.toLocaleString()}元`
+            });
+            if (result && result.success) {
+                log(`创建成功! ID=${result.data.id}`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`创建失败: ${result.message}`, 'error');
+            }
+        }
+
+        async function refreshPricingList() {
+            log('正在获取定价列表...');
+            const result = await fetchApi(`${API_BASE}?page=1&pageSize=20`);
+            if (result && result.success && result.data) {
+                log(`获取成功: ${result.data.list.length} 条记录`);
+                renderPricingList(result.data.list);
+            }
+        }
+
+        function renderPricingList(list) {
+            const tbody = document.getElementById('pricingBody');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">暂无数据</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(item => {
+                const total = (item.price || 0) * (item.minOrderQty || 0);
+                const statusClass = `status-${item.status.toLowerCase()}`;
+                const statusText = getStatusText(item.status);
+                const actions = getActionButtons(item);
+                return `<tr data-id="${item.id}">
+                    <td>${item.id}</td>
+                    <td>${item.code}</td>
+                    <td>${item.supplierName || '-'}</td>
+                    <td>${item.materialName || '-'}</td>
+                    <td>¥${(item.price || 0).toLocaleString()}</td>
+                    <td>${item.minOrderQty || '-'}</td>
+                    <td><strong>¥${total.toLocaleString()}</strong></td>
+                    <td><span class="status ${statusClass}">${statusText}</span></td>
+                    <td>${actions}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function getStatusText(status) {
+            const map = {
+                'DRAFT': '草稿',
+                'PENDING': '待审批',
+                'FINANCE_PENDING': '待财务审核',
+                'DIRECTOR_PENDING': '待总监审批',
+                'ACTIVE': '已生效',
+                'EXPIRED': '已过期'
+            };
+            return map[status] || status;
+        }
+
+        function getActionButtons(item) {
+            let html = '';
+            if (item.status === 'DRAFT') {
+                html += `<button class="btn btn-primary" onclick="submitApproval(${item.id})">提交审批</button>`;
+            }
+            if (item.status === 'PENDING') {
+                html += `<button class="btn btn-success" onclick="approve(${item.id})">审批</button>`;
+                html += `<button class="btn btn-danger" onclick="reject(${item.id})">驳回</button>`;
+            }
+            if (item.status === 'FINANCE_PENDING') {
+                html += `<button class="btn btn-success" onclick="financeApprove(${item.id})">财务审核</button>`;
+                html += `<button class="btn btn-danger" onclick="reject(${item.id})">驳回</button>`;
+            }
+            if (item.status === 'DIRECTOR_PENDING') {
+                html += `<button class="btn btn-success" onclick="directorApprove(${item.id})">总监审批</button>`;
+                html += `<button class="btn btn-danger" onclick="reject(${item.id})">驳回</button>`;
+            }
+            if (item.status === 'ACTIVE') {
+                html += `<button class="btn btn-warning" onclick="terminate(${item.id})">终止</button>`;
+            }
+            return html;
+        }
+
+        async function submitApproval(id) {
+            log(`正在提交ID=${id}`);
+            const result = await fetchApi(`${API_BASE}/${id}/submit`, 'POST');
+            if (result && result.success) {
+                log(`提交成功！审批等级: ${result.data.approvalLevel}`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`提交失败: ${result.message}`, 'error');
+            }
+        }
+
+        async function approve(id) {
+            log(`正在审批ID=${id}`);
+            const result = await fetchApi(`${API_BASE}/${id}/approve`, 'POST');
+            if (result && result.success) {
+                log(`审批成功！`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`审批失败: ${result.message}`, 'error');
+            }
+        }
+
+        async function financeApprove(id) {
+            log(`财务审核ID=${id}`);
+            const result = await fetchApi(`${API_BASE}/${id}/finance-approve`, 'POST');
+            if (result && result.success) {
+                log(`财务审核成功！`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`财务审核失败: ${result.message}`, 'error');
+            }
+        }
+
+        async function directorApprove(id) {
+            log(`总监审批ID=${id}`);
+            const result = await fetchApi(`${API_BASE}/${id}/director-approve`, 'POST');
+            if (result && result.success) {
+                log(`总监审批成功！`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`总监审批失败: ${result.message}`, 'error');
+            }
+        }
+
+        async function reject(id) {
+            const reason = prompt('请输入驳回原因:');
+            if (!reason) return;
+            log(`正在驳回ID=${id}`);
+            const result = await fetchApi(`${API_BASE}/${id}/reject`, 'POST', { reason });
+            if (result && result.success) {
+                log(`驳回成功！`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`驳回失败: ${result.message}`, 'error');
+            }
+        }
+
+        async function terminate(id) {
+            if (!confirm('确定要终止此定价?')) return;
+            log(`正在终止ID=${id}`);
+            const result = await fetchApi(`${API_BASE}/${id}/terminate`, 'POST');
+            if (result && result.success) {
+                log(`终止成功！`, 'success');
+                await refreshPricingList();
+            } else {
+                log(`终止失败: ${result.message}`, 'error');
+            }
+        }
+
+        window.onload = function() {
+            refreshPricingList();
+        };
+    </script>
+</body>
+</html>
