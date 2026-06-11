@@ -1,5 +1,5 @@
 import api from './api';
-import type { Supplier, SupplierCreate, SupplierTag, PageResult, PaginationParams, ApiResponse } from '../types';
+import type { Supplier, SupplierCreate, SupplierTag, PageResult, PaginationParams, ApiResponse, SupplierEvaluation, SupplierQualification } from '../types';
 
 export const supplierApi = {
   getList: (params: PaginationParams = {}): Promise<ApiResponse<PageResult<Supplier>>> => {
@@ -32,6 +32,30 @@ export const supplierApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
+  },
+
+  getTags: (): Promise<ApiResponse<SupplierTag[]>> => {
+    return api.get('/api/supplier-tags');
+  },
+
+  addTag: (supplierId: number, data: { tagName: string; tagColor?: string }): Promise<ApiResponse<number>> => {
+    return api.post(`/api/supplier-tags/supplier/${supplierId}`, data);
+  },
+
+  removeTag: (supplierId: number, tagId: number): Promise<ApiResponse<void>> => {
+    return api.delete(`/api/supplier-tags/${tagId}`);
+  },
+
+  getEvaluationHistory: (supplierId: number): Promise<ApiResponse<SupplierEvaluation[]>> => {
+    return api.get(`/api/supplier-evaluations/supplier/${supplierId}`);
+  },
+
+  saveEvaluation: (supplierId: number, data: Partial<SupplierEvaluation>): Promise<ApiResponse<number>> => {
+    return api.post(`/api/supplier-evaluations/supplier/${supplierId}`, data);
+  },
+
+  getQualifications: (supplierId: number): Promise<ApiResponse<SupplierQualification[]>> => {
+    return api.get(`/api/supplier-qualifications/supplier/${supplierId}`);
   },
 };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import type { Material, MaterialSupplier, Supplier } from '../types';
+import type { Material, MaterialSupplier, Supplier, MaterialDrawing } from '../types';
 import { materialApi } from '../services/material';
 import { supplierApi } from '../services/supplier';
 
@@ -14,7 +14,9 @@ export default function Materials({ onLogout }: MaterialsProps) {
   const [editId, setEditId] = useState<number | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [showDrawingModal, setShowDrawingModal] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
+  const [detailTab, setDetailTab] = useState<'info' | 'suppliers' | 'drawings'>('info');
   const [keyword, setKeyword] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -22,10 +24,34 @@ export default function Materials({ onLogout }: MaterialsProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [materialSuppliers, setMaterialSuppliers] = useState<MaterialSupplier[]>([]);
+  const [materialDrawings, setMaterialDrawings] = useState<MaterialDrawing[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [supplierFormData, setSupplierFormData] = useState({ supplierId: 0, isPrimary: false, leadTime: 0, moq: 0, remark: '' });
+  const [drawingFormData, setDrawingFormData] = useState({ drawingNo: '', version: 'V1.0', description: '' });
+  const [categoryAttributes, setCategoryAttributes] = useState<Record<string, any>>({});
+
+  // 不同品类的属性定义
+  const getCategoryAttributeFields = (category: string) => {
+    switch(category) {
+      case '核心零部件':
+        return [
+          { name: 'powerRange', label: '功率范围', type: 'text' },
+          { name: 'material', label: '材质', type: 'text' },
+          { name: 'dimension', label: '尺寸规格', type: 'text' },
+        ];
+      case '电气元件':
+        return [
+          { name: 'voltageLevel', label: '电压等级', type: 'text' },
+          { name: 'currentCapacity', label: '电流容量', type: 'text' },
+          { name: 'protectionLevel', label: '防护等级', type: 'text' },
+          { name: 'certification', label: '认证标准', type: 'text' },
+        ];
+      default:
+        return [];
+    }
+  }
 
   const [formData, setFormData] = useState<Partial<Material>>({
     code: '',
@@ -99,6 +125,56 @@ export default function Materials({ onLogout }: MaterialsProps) {
     }
   };
 
+  const loadMaterialDrawings = async (materialId: number) => {
+    try {
+      setMaterialDrawings([
+        { id: 1, materialId, drawingNo: 'DRW-2024-001', drawingName: '发动机缸体装配图.pdf', fileUrl: '#', version: 'V1.0', fileSize: 2048000, remark: '发动机缸体详细装配图纸', createdAt: '2024-06-01', status: 'ACTIVE' },
+        { id: 2, materialId, drawingNo: 'DRW-2024-002', drawingName: '发动机缸体零件图.pdf', fileUrl: '#', version: 'V2.1', fileSize: 1536000, remark: '缸体零件详细尺寸图', createdAt: '2024-06-15', status: 'ACTIVE' },
+      ]);
+    } catch (error) {
+      console.error('加载物料图纸失败:', error);
+    }
+  };
+
+  const handleSaveDrawing = async () => {
+    if (!drawingFormData.drawingNo) {
+      showNotification('请填写图纸编号', 'error');
+      return;
+    }
+
+    const newDrawing: MaterialDrawing = {
+      ...drawingFormData,
+      id: Date.now(),
+      materialId: currentMaterial?.id || 0,
+      drawingName: `${drawingFormData.drawingNo}.pdf`,
+      fileUrl: '#',
+      fileSize: 1024000,
+      remark: drawingFormData.description,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+
+    setMaterialDrawings(prev => [...prev, newDrawing]);
+    setShowDrawingModal(false);
+    setDrawingFormData({ drawingNo: '', version: 'V1.0', description: '' });
+    showNotification('图纸上传成功', 'success');
+  };
+
+  const handleDeleteDrawing = async (drawingId: number) => {
+    if (!confirm('确定要删除该图纸吗？')) return;
+    
+    setMaterialDrawings(prev => prev.filter(d => d.id !== drawingId));
+    showNotification('图纸删除成功', 'success');
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const getStatusText = (status: string) => {
     const map: Record<string, string> = {
       DRAFT: '草稿',
@@ -127,7 +203,15 @@ export default function Materials({ onLogout }: MaterialsProps) {
       setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
+      // 如果是分类变化，清空之前的分类属性
+      if (name === 'category') {
+        setCategoryAttributes({});
+      }
     }
+  };
+
+  const handleCategoryAttributeChange = (name: string, value: string) => {
+    setCategoryAttributes(prev => ({ ...prev, [name]: value }));
   };
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -160,6 +244,8 @@ export default function Materials({ onLogout }: MaterialsProps) {
       if (response.success && response.data) {
         setCurrentMaterial(response.data);
         await loadMaterialSuppliers(material.id!);
+        await loadMaterialDrawings(material.id!);
+        setDetailTab('info');
         setShowDetailModal(true);
       } else {
         showNotification(response.message || '获取详情失败', 'error');
@@ -341,16 +427,37 @@ export default function Materials({ onLogout }: MaterialsProps) {
               <span>物料管理</span>
             </div>
           </div>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-            className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white font-medium rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue transition-all flex items-center gap-2 shadow-sm"
-          >
-            <i className="fas fa-plus"></i>
-            新增物料
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-center gap-2">
+              <i className="fas fa-sync"></i>
+              <span>ERP同步中...</span>
+              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">每日00:00</span>
+            </div>
+            <button
+              onClick={() => {
+                resetForm();
+                setShowModal(true);
+              }}
+              className="px-6 py-3 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white font-medium rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue transition-all flex items-center gap-2 shadow-sm"
+            >
+              <i className="fas fa-plus"></i>
+              新增物料
+            </button>
+          </div>
+        </div>
+        
+        {/* ERP同步提示 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <i className="fas fa-info-circle text-blue-600 mt-0.5"></i>
+            <div className="flex-1">
+              <h4 className="font-medium text-blue-800 mb-1">ERP系统集成</h4>
+              <p className="text-sm text-blue-700">
+                物料编码、品类编码优先从ERP系统同步。如需新增物料请联系ERP管理员。
+                每日00:00自动同步主数据。
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -599,10 +706,26 @@ export default function Materials({ onLogout }: MaterialsProps) {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
                     >
                       <option value="">请选择</option>
-                      <option value="原材料">原材料</option>
-                      <option value="半成品">半成品</option>
-                      <option value="成品">成品</option>
-                      <option value="备件">备件</option>
+                      <option value="原装件">原装件</option>
+                      <option value="OEM件">OEM件</option>
+                      <option value="替代件">替代件</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">适用机型</label>
+                    <select
+                      name="applicableModels"
+                      value={formData.applicableModels || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
+                    >
+                      <option value="">请选择</option>
+                      <option value="Jenbacher">Jenbacher</option>
+                      <option value="MWM">MWM</option>
+                      <option value="Caterpillar">Caterpillar</option>
+                      <option value="MTU">MTU</option>
+                      <option value="Deutz">Deutz</option>
+                      <option value="通用">通用</option>
                     </select>
                   </div>
                   <div>
@@ -708,6 +831,30 @@ export default function Materials({ onLogout }: MaterialsProps) {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
                     />
                   </div>
+                  
+                  {/* 分类属性区域 */}
+                  {getCategoryAttributeFields(formData.category || '').length > 0 && (
+                    <div className="md:col-span-3 mt-4 border-t border-gray-200 pt-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <i className="fas fa-sliders text-weyeah-blue"></i>
+                        {formData.category}分类属性
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {getCategoryAttributeFields(formData.category || '').map((field) => (
+                          <div key={field.name}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                            <input
+                              type="text"
+                              value={categoryAttributes[field.name] || ''}
+                              onChange={(e) => handleCategoryAttributeChange(field.name, e.target.value)}
+                              placeholder={`请输入${field.label}`}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 flex-shrink-0">
@@ -742,13 +889,48 @@ export default function Materials({ onLogout }: MaterialsProps) {
                   <i className="fas fa-times"></i>
                 </button>
               </div>
+              
+              <div className="flex border-b border-gray-100 flex-shrink-0">
+                <button
+                  onClick={() => setDetailTab('info')}
+                  className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                    detailTab === 'info' ? 'text-weyeah-blue border-b-2 border-weyeah-blue bg-blue-50' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <i className="fas fa-info-circle mr-2"></i>
+                  基本信息
+                </button>
+                <button
+                  onClick={() => setDetailTab('suppliers')}
+                  className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                    detailTab === 'suppliers' ? 'text-weyeah-blue border-b-2 border-weyeah-blue bg-blue-50' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <i className="fas fa-building mr-2"></i>
+                  关联供应商
+                </button>
+                <button
+                  onClick={() => setDetailTab('drawings')}
+                  className={`flex-1 px-6 py-3 text-sm font-medium transition-colors relative ${
+                    detailTab === 'drawings' ? 'text-weyeah-blue border-b-2 border-weyeah-blue bg-blue-50' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <i className="fas fa-file-image mr-2"></i>
+                  图纸管理
+                  {currentMaterial.materialType === '替代件' && (
+                    <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">必填</span>
+                  )}
+                </button>
+              </div>
+              
               <div className="p-6 overflow-y-auto flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <i className="fas fa-box text-weyeah-blue"></i>
-                      基本信息
-                    </h3>
+                {detailTab === 'info' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <i className="fas fa-box text-weyeah-blue"></i>
+                        基本信息
+                      </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <div className="text-xs text-gray-500 mb-1">物料编码</div>
@@ -788,10 +970,32 @@ export default function Materials({ onLogout }: MaterialsProps) {
                         <div className="text-xs text-gray-500 mb-1">物料类型</div>
                         <div className="text-sm">{currentMaterial.materialType || '-'}</div>
                       </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">适用机型</div>
+                        <div className="text-sm">{currentMaterial.applicableModels || '-'}</div>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="space-y-4">
+                  {/* 分类属性显示 */}
+                  {getCategoryAttributeFields(currentMaterial.category || '').length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <i className="fas fa-sliders text-weyeah-blue"></i>
+                        {currentMaterial.category}分类属性
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {getCategoryAttributeFields(currentMaterial.category || '').map((field) => (
+                          <div key={field.name} className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">{field.label}</div>
+                            <div className="text-sm">-</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-4 mt-6">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                       <i className="fas fa-cogs text-weyeah-blue"></i>
                       库存信息
@@ -831,8 +1035,10 @@ export default function Materials({ onLogout }: MaterialsProps) {
                     )}
                   </div>
                 </div>
+              )}
 
-                <div className="mt-6">
+              {detailTab === 'suppliers' && (
+                <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                       <i className="fas fa-building text-weyeah-blue"></i>
@@ -907,18 +1113,94 @@ export default function Materials({ onLogout }: MaterialsProps) {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 flex-shrink-0">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-4 py-2 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue"
-                >
-                  关闭
-                </button>
-              </div>
+              )}
+
+              {detailTab === 'drawings' && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <i className="fas fa-file-image text-weyeah-blue"></i>
+                      图纸管理
+                      {currentMaterial.materialType === '替代件' && (
+                        <span className="text-sm text-red-500">（替代件必须上传图纸）</span>
+                      )}
+                    </h3>
+                    <button
+                      onClick={() => setShowDrawingModal(true)}
+                      className="px-3 py-1.5 bg-weyeah-blue text-white text-sm rounded-lg hover:bg-weyeah-blue-700 flex items-center gap-1"
+                    >
+                      <i className="fas fa-plus"></i>
+                      上传图纸
+                    </button>
+                  </div>
+                  
+                  {currentMaterial.materialType === '替代件' && materialDrawings.length === 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center gap-2 text-yellow-800">
+                        <i className="fas fa-exclamation-triangle"></i>
+                        <span>该物料为替代件，建议上传相关图纸文件</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {materialDrawings.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <i className="fas fa-file-image text-4xl mb-4"></i>
+                      <p>暂无图纸文件</p>
+                      <p className="text-sm mt-2">点击上方按钮上传图纸</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {materialDrawings.map((drawing) => (
+                        <div key={drawing.id} className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <i className="fas fa-file-pdf text-red-500 text-xl"></i>
+                                <div>
+                                  <div className="font-medium">{drawing.drawingName}</div>
+                                  <div className="text-xs text-gray-500">
+                                    图纸编号: {drawing.drawingNo} | 版本: {drawing.version}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <span>上传时间: {drawing.createdAt}</span>
+                                <span>文件大小: {formatFileSize(drawing.fileSize || 0)}</span>
+                              </div>
+                              {drawing.remark && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <span className="text-gray-500">说明: </span>{drawing.remark}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-600 hover:text-blue-600" title="下载">
+                                <i className="fas fa-download"></i>
+                              </button>
+                              <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-600 hover:text-red-600" title="删除" onClick={() => drawing.id && handleDeleteDrawing(drawing.id)}>
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 flex-shrink-0">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-4 py-2 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue"
+              >
+                关闭
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {showSupplierModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] animate-fadeIn p-4">
@@ -997,6 +1279,84 @@ export default function Materials({ onLogout }: MaterialsProps) {
                   className="px-4 py-2 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue"
                 >
                   添加
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDrawingModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] animate-fadeIn p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">上传图纸</h2>
+                <button
+                  onClick={() => setShowDrawingModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">图纸编号 *</label>
+                  <input
+                    type="text"
+                    value={drawingFormData.drawingNo}
+                    onChange={(e) => setDrawingFormData(prev => ({ ...prev, drawingNo: e.target.value }))}
+                    placeholder="如: DRW-2024-001"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">版本</label>
+                  <input
+                    type="text"
+                    value={drawingFormData.version}
+                    onChange={(e) => setDrawingFormData(prev => ({ ...prev, version: e.target.value }))}
+                    placeholder="如: V1.0"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">文件上传</label>
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:border-weyeah-blue transition-colors">
+                    <input
+                      type="file"
+                      accept=".pdf,.dwg,.dxf"
+                      className="hidden"
+                      id="drawing-file"
+                    />
+                    <label htmlFor="drawing-file" className="cursor-pointer">
+                      <i className="fas fa-upload text-gray-400 text-3xl mb-2"></i>
+                      <p className="text-sm text-gray-600">点击或拖拽文件到此处上传</p>
+                      <p className="text-xs text-gray-400 mt-1">支持 PDF, DWG, DXF 格式</p>
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">说明</label>
+                  <textarea
+                    value={drawingFormData.description}
+                    onChange={(e) => setDrawingFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={2}
+                    placeholder="请输入图纸说明..."
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-weyeah-blue"
+                  />
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowDrawingModal(false)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSaveDrawing}
+                  className="px-4 py-2 bg-gradient-to-r from-weyeah-blue to-weyeah-blue-700 text-white rounded-lg hover:from-weyeah-blue-700 hover:to-weyeah-blue"
+                >
+                  上传
                 </button>
               </div>
             </div>

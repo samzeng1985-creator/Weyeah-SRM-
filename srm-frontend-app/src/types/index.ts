@@ -11,25 +11,42 @@ export interface Supplier {
   country: string;
   city?: string;
   address?: string;
+  officeAddress?: string;
   contactPerson?: string;
+  contactPosition?: string;
   contactPhone?: string;
   contactEmail?: string;
+  faxNumber?: string;
   taxNumber?: string;
+  registrationNumber?: string;
+  registeredCapital?: number;
+  registeredCapitalCurrency?: string;
+  companySize?: string;
+  website?: string;
   businessLicense?: string;
   bankName?: string;
   bankAccount?: string;
   bankAccountName?: string;
   annualCapacity?: number;
   mainProducts?: string;
+  industryCategory?: string;
   qualityCertification?: string;
   isoCertificate?: string;
   registeredDate?: string;
+  foundingDate?: string;
   annualReviewDate?: string;
+  annualReviewStatus?: string;
   evaluationLevel?: string;
+  cooperationLevel?: string;
+  categoryClassification?: string;
   deliveryScore?: number;
   qualityScore?: number;
+  priceScore?: number;
   serviceScore?: number;
   comprehensiveScore?: number;
+  lastEvaluationDate?: string;
+  evaluationCycle?: string;
+  tags?: SupplierTag[];
   remark?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -46,21 +63,79 @@ export interface SupplierCreate {
   country?: string;
   city?: string;
   address?: string;
+  officeAddress?: string;
   contactPerson?: string;
+  contactPosition?: string;
   contactPhone?: string;
   contactEmail?: string;
+  faxNumber?: string;
   taxNumber?: string;
+  registrationNumber?: string;
+  registeredCapital?: number;
+  registeredCapitalCurrency?: string;
+  companySize?: string;
+  website?: string;
   businessLicense?: string;
   bankName?: string;
   bankAccount?: string;
   bankAccountName?: string;
   annualCapacity?: number;
   mainProducts?: string;
+  industryCategory?: string;
   qualityCertification?: string;
   isoCertificate?: string;
   registeredDate?: string;
+  foundingDate?: string;
   annualReviewDate?: string;
+  annualReviewStatus?: string;
+  cooperationLevel?: string;
+  categoryClassification?: string;
   remark?: string;
+  tags?: string[];
+}
+
+export interface SupplierEvaluation {
+  id?: number;
+  supplierId: number;
+  evaluationDate: string;
+  qualityScore: number;
+  deliveryScore: number;
+  priceScore: number;
+  serviceScore: number;
+  comprehensiveScore: number;
+  evaluationLevel: string;
+  evaluator?: string;
+  evaluationPeriod?: string;
+  remark?: string;
+  createdAt?: string;
+}
+
+export interface SupplierQualification {
+  id?: number;
+  supplierId: number;
+  qualificationType: string;
+  qualificationName: string;
+  fileUrl?: string;
+  fileName?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  status?: string;
+  remark?: string;
+  createdAt?: string;
+}
+
+export interface QualificationAlert {
+  id?: number;
+  supplierId: number;
+  supplierName?: string;
+  qualificationType: string;
+  qualificationName: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  alertLevel: string;
+  isRead?: number;
+  isProcessed?: number;
+  createdAt?: string;
 }
 
 export interface SupplierTag {
@@ -95,6 +170,41 @@ export interface Material {
   imageUrl?: string;
   createdAt?: string;
   updatedAt?: string;
+  
+  // 替代件专用字段
+  ownBrand?: string;
+  drawingNo?: string;
+  drawingVersion?: string;
+  
+  // 分类扩展属性 - 发动机部件类
+  powerRange?: string;
+  material?: string;
+  dimension?: string;
+  
+  // 分类扩展属性 - 电气系统类
+  voltageLevel?: string;
+  currentCapacity?: string;
+  protectionLevel?: string;
+  certification?: string;
+  
+  // 分类扩展属性 - 冷却系统类
+  coolingMethod?: string;
+  heatDissipationArea?: string;
+  flowParameters?: string;
+  
+  // 分类扩展属性 - 进排气系统类
+  pressureLevel?: string;
+  flowRange?: string;
+  materialRequirements?: string;
+  
+  // 分类扩展属性 - 通用耗材类
+  specModel?: string;
+  applicationRange?: string;
+  brandRequirements?: string;
+  
+  // ERP同步相关
+  erpSyncStatus?: string;
+  lastSyncTime?: string;
 }
 
 export interface MaterialSupplier {
